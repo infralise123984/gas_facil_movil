@@ -1,0 +1,20 @@
+{
+    // SDK de Flutter instalado de forma portable (ver docs/PLAN_APP_CAMIONERO.md, sección 17).
+    // Esta línea se puede quitar cuando `flutter` esté disponible en el PATH: VS Code lo detecta solo.
+    "dart.flutterSdkPath": "C:\\Users\\tokyo-3\\dev\\flutter",
+    // Formato y análisis para Dart/Flutter.
+    "dart.lineLength": 100,
+    "editor.rulers": [
+        100
+    ],
+    "editor.formatOnSave": true,
+    // Los archivos generados por Flutter no deben ensuciar la búsqueda.
+    "files.exclude": {
+        "**/.dart_tool": true,
+        "**/build": true
+    },
+    "search.exclude": {
+        "**/.dart_tool": true,
+        "**/build": true
+    }
+}
