@@ -148,6 +148,8 @@ Nueva app `api/` con `djangorestframework` (+ `simplejwt` opcional).
 
 ### Contrato de API propuesto (fase 1)
 
+> **Especificación completa y definitiva:** `gas_project/docs/API_MOVIL.md`. Ese archivo es el contrato de referencia para implementar la API en el repo web; acá queda solo el resumen.
+
 ```
 POST /api/v1/auth/login/            {username, password} → 200 {usuario, rol} | 202 {requiere_2fa}
 POST /api/v1/auth/2fa/              {codigo} → 200 {usuario}
@@ -688,4 +690,19 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 - No hay login, sesión ni validación de rol.
 - No hay cola offline, caché ni idempotencia.
 - El reloj del Inicio usa la hora del teléfono; debe pasar a `servidor_ahora`.
-- Las acciones (tomar, entregar, cancelar, devolver, tarreo) **solo confirman y avisan: no cambian nada**. El emulador no reproduce bien batería, notificaciones en background ni la exención de optimización, que es justo lo crítico de esta app.
+- Las acciones (tomar, entregar, cancelar, devolver, tarreo) **solo confirman y avisan: no cambian nada**.
+- **No hay descuentos.** La PWA los muestra en el panel de entregas con un bloque rojo "CON DESCUENTO", el desglose de subtotal y el subtotal neto por línea (`partials/_pedido_desglose_camionero.html`). El móvil todavía no lo representa porque los datos de prueba no traen descuentos. Entra junto con la API.
+
+### 18.3 Cómo depurar en el teléfono (sin pedir capturas)
+
+El teléfono responde a `adb`, así que el error se inspecciona directo:
+
+| Necesidad | Comando |
+|---|---|
+| Ver la pantalla del teléfono | `adb shell screencap -p /sdcard/x.png` + `adb pull /sdcard/x.png` |
+| Ver el log del sistema | `adb logcat -d -t 400` |
+| Qué ventana tiene el foco | `adb shell dumpsys window \| Select-String "mCurrentFocus"` |
+| Tocar la pantalla por coordenadas | `adb shell input tap <x> <y>` (resolución: `adb shell wm size`) |
+| Instalar y lanzar sin REPL | `adb install -r <apk>` + `adb shell monkey -p cl.kimgas.gas_facil_movil -c android.intent.category.LAUNCHER 1` |
+
+**Lección del primer error real:** `flutter analyze` pasó limpio y la app **igual crasheó** en el teléfono. El análisis estático no detecta aserciones en tiempo de ejecución (`TextTheme.apply(fontSizeFactor:)` revienta si un estilo base tiene `fontSize == null`). Por eso el paso "probar en el teléfono real" no es opcional. El emulador no reproduce bien batería, notificaciones en background ni la exención de optimización, que es justo lo crítico de esta app.
