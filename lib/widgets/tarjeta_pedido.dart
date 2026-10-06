@@ -14,6 +14,7 @@ class TarjetaPedido extends StatelessWidget {
     this.acciones = const <Widget>[],
     this.mostrarEncabezadoCancelado = false,
     this.mostrarFecha = false,
+    this.mostrarTituloProductos = true,
   });
 
   final Pedido pedido;
@@ -24,6 +25,10 @@ class TarjetaPedido extends StatelessWidget {
 
   /// Pie con la fecha según estado ("Entregado: 06/10/2026 09:15").
   final bool mostrarFecha;
+
+  /// El panel de entregas (`_entregas_cards.html`) usa un parcial que **no**
+  /// lleva título de productos; el resumen del día sí lo lleva.
+  final bool mostrarTituloProductos;
 
   bool get _cancelado => pedido.estado == EstadoPedido.cancelado;
 
@@ -65,7 +70,10 @@ class TarjetaPedido extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _DesgloseProductos(pedido: pedido),
+                _DesgloseProductos(
+                  pedido: pedido,
+                  mostrarTitulo: mostrarTituloProductos,
+                ),
                 const SizedBox(height: 16),
                 _Ubicacion(pedido: pedido),
                 if (mostrarFecha) ...<Widget>[
@@ -131,9 +139,10 @@ class TarjetaPedido extends StatelessWidget {
 }
 
 class _DesgloseProductos extends StatelessWidget {
-  const _DesgloseProductos({required this.pedido});
+  const _DesgloseProductos({required this.pedido, required this.mostrarTitulo});
 
   final Pedido pedido;
+  final bool mostrarTitulo;
 
   @override
   Widget build(BuildContext context) {
@@ -142,11 +151,14 @@ class _DesgloseProductos extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          cancelado ? 'Productos:' : 'Productos entregados:',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
+        if (mostrarTitulo)
+          Text(
+            // Regla exacta de `_mis_entregas_camionero_cards.html`: solo los
+            // cancelados pierden la palabra "entregados".
+            cancelado ? 'Productos:' : 'Productos entregados:',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        if (mostrarTitulo) const SizedBox(height: 10),
         for (final LineaPedido linea in pedido.lineas)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),

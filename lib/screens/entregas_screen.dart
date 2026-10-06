@@ -47,6 +47,7 @@ class EntregasScreen extends StatelessWidget {
   Widget _tarjetaEnRuta(BuildContext context, Pedido pedido) {
     return TarjetaPedido(
       pedido: pedido,
+      mostrarTituloProductos: false,
       acciones: <Widget>[
         BotonAccion(
           etiqueta: 'MARCAR ENTREGADO',
@@ -105,6 +106,7 @@ class EntregasScreen extends StatelessWidget {
   Widget _tarjetaPendiente(BuildContext context, Pedido pedido) {
     return TarjetaPedido(
       pedido: pedido,
+      mostrarTituloProductos: false,
       acciones: <Widget>[
         BotonAccion(
           etiqueta: 'TOMAR PEDIDO',

@@ -36,8 +36,16 @@ ThemeData construirTema() {
     scaffoldBackgroundColor: Colors.white,
   );
 
+  // NO usar `textTheme.apply(fontSizeFactor: ...)`: lanza una aserción en
+  // tiempo de ejecución si algún estilo base tiene `fontSize == null`
+  // (text_style.dart:996). Se fijan tamaños explícitos en su lugar.
   return base.copyWith(
-    textTheme: base.textTheme.apply(fontSizeFactor: 1.05),
+    textTheme: base.textTheme.copyWith(
+      bodyLarge: const TextStyle(fontSize: 17, color: Colors.black87),
+      bodyMedium: const TextStyle(fontSize: 16, color: Colors.black87),
+      titleLarge: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      labelLarge: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: ColoresApp.primario,
       foregroundColor: Colors.white,

@@ -632,4 +632,60 @@ Sin gestores de paquetes, se instala por **archivos comprimidos dentro del perfi
 1. **Reiniciar VS Code** para que herede las nuevas variables de `PATH` (`flutter`, `dart`, `adb`).
 2. En terminales nuevas, si `flutter` no aparece, usar la ruta absoluta `%USERPROFILE%\dev\flutter\bin\flutter.bat`.
 
-**Cambio de API a tener en cuenta:** en esta versión de las `cmdline-tools`, `sdkmanager` está **deprecado** y `--licenses` **ya no es necesario** (las licencias se gestionan solas). El reemplazo es el CLI `android sdk install|list|remove|update`. Las guías antiguas que dicen `sdkmanager --licenses` ya no aplican. El emulador no reproduce bien batería, notificaciones en background ni la exención de optimización, que es justo lo crítico de esta app.
+**Cambio de API a tener en cuenta:** en esta versión de las `cmdline-tools`, `sdkmanager` está **deprecado** y `--licenses` **ya no es necesario** (las licencias se gestionan solas). El reemplazo es el CLI `android sdk install|list|remove|update`. Las guías antiguas que dicen `sdkmanager --licenses` ya no aplican.
+
+### 17.5 Problemas encontrados al compilar (y su solución)
+
+| Síntoma | Causa real | Solución aplicada |
+|---|---|---|
+| `Package ndk not found. Package 28.2.13676358 not found` y luego `Android sdkmanager did not install NDK` | El **`sdkmanager.bat` deprecado rompe cualquier argumento que contenga `;`**: lo parte en dos. Por eso Gradle no podía instalar el NDK solo | Instalar los paquetes con el CLI nuevo: `android sdk install "ndk;28.2.13676358"`. **Este bug afectará a cualquier proyecto Flutter en esta máquina** |
+| `avdmanager is missing from the Android SDK` (aviso de VS Code al crear un emulador) | VS Code se inició **antes** de definir `ANDROID_HOME`, así que la extensión no veía el SDK. El archivo `avdmanager.bat` siempre existió y funciona | `flutter config --android-sdk <ruta>`: queda guardado en la configuración de Flutter y no depende de variables de entorno. Requiere reiniciar VS Code |
+| `only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered` | Las `cmdline-tools` nuevas generan XML v4 y AGP entiende v3 | Solo un aviso. La compilación funciona |
+
+**Verificado el 2026-10-06:** `flutter build apk --debug` → `√ Built build\app\outputs\flutter-apk\app-debug.apk`. El toolchain de Android queda validado de punta a punta.
+
+### 17.6 Emulador: qué falta y por qué no se recomienda
+
+Crear un AVD requiere **cuatro** piezas, no una:
+
+1. `avdmanager` ✅ (ya está, el problema era la ruta del SDK)
+2. Paquete `emulator` ❌ (~350 MB)
+3. Una **imagen de sistema** ❌ (~1,5–2 GB)
+4. **Aceleración por hardware** ❌
+
+Estado de la máquina verificado: el procesador soporta VT-x (`VMMonitorModeExtensions=True`, `VirtFirmwareEnabled=True`) pero **`HypervisorPresent=False`**: no hay hypervisor activo. Habilitar *Windows Hypervisor Platform* exige **permisos de administrador y reiniciar Windows**, así que es un paso manual del dueño. Sin eso el emulador corre por software y resulta inusable (minutos de arranque, bloqueos).
+
+Aun con todo instalado, el emulador **no reproduce lo que más importa en esta app**: notificaciones con la app cerrada, exención de optimización de batería y, si se aprueba, el servicio en primer plano del GPS (§6). Esas tres cosas solo se prueban en un teléfono real.
+
+**Recomendación:** probar en **teléfono Android por USB** (depuración USB activada). Cero descargas y cubre el comportamiento real.
+
+---
+
+## 18. Estado de implementación (2026-10-06)
+
+| Fase | Estado |
+|---|---|
+| Toolchain | ✅ Flutter 3.47.6 + Android SDK 36 (§17.4) |
+| Repositorio | ✅ `gas_facil_movil`, rama `main`, dos commits subidos |
+| **F0** contrato de API | ⏳ pendiente — bloqueado por P-19 y por el spike de CSRF |
+| **F1** esqueleto + login + listado | 🟡 **maqueta con datos falsos**: sin login y sin API |
+| **F2**–**F9** | ⏳ pendientes |
+
+### 18.1 Qué existe hoy en `lib/`
+
+| Archivo | Contenido |
+|---|---|
+| `main.dart` / `app.dart` | Arranque y contenedor con la barra inferior de cuatro destinos |
+| `theme/app_theme.dart` | Colores y medidas espejo de la PWA (Bootstrap 5) |
+| `models/pedido.dart` | `Pedido`, `LineaPedido`, `TipoBalon`, enums y formato de CLP |
+| `data/datos_mock.dart` | Datos de prueba inventados, **a reemplazar por el repositorio de la API** |
+| `screens/` | Inicio, Entregas, Mis Entregas, Tarreo |
+| `widgets/` | Barra inferior, botón grande, tarjeta de pedido, diálogo de confirmación y comunes |
+
+### 18.2 Lo que la maqueta todavía NO hace (a propósito)
+
+- **No llama a ninguna API.** `DatosMock` está cableado directo en las pantallas; sustituirlo por un repositorio es el trabajo de F1.
+- No hay login, sesión ni validación de rol.
+- No hay cola offline, caché ni idempotencia.
+- El reloj del Inicio usa la hora del teléfono; debe pasar a `servidor_ahora`.
+- Las acciones (tomar, entregar, cancelar, devolver, tarreo) **solo confirman y avisan: no cambian nada**. El emulador no reproduce bien batería, notificaciones en background ni la exención de optimización, que es justo lo crítico de esta app.
