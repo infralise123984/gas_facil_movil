@@ -672,8 +672,10 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 | **F0** contrato de API | ✅ `gas_project/docs/API_MOVIL.md`; el *spike* de CSRF quedó resuelto |
 | **F1** login + listado | ✅ probado en el teléfono contra el API real |
 | **F2** las cuatro acciones | ✅ API y app; probado de punta a punta (tomar un pedido) |
-| Sesión persistente | ✅ `flutter_secure_storage` (Keystore), confirmada contra `/auth/perfil/` |
-| **F4** en adelante (`tarreo/`, `balones/`, `resumen-hoy/`, `historial/`) | ⏳ no existe todavía |
+| Sesión persistente | ✅ `flutter_secure_storage` (Keystore), confirmada contra `/auth/perfil/` y con la cookie cifrada en el disco del teléfono |
+| **F4** `tarreo/` y `balones/` | ✅ API (13 tests) y app: el Tarreo vende contra el catálogo real, sin precios inventados |
+| **F6** `resumen-hoy/` e `historial/` | ⏳ no existe todavía |
+| Idempotencia (`Idempotency-Key`) | ⏳ requiere una migración en el servidor (§8 del contrato) |
 
 ### 18.1 Qué existe hoy en `lib/`
 
@@ -683,21 +685,20 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 | `core/config/api_config.dart` | `baseUrl` y `Origin` por `--dart-define` |
 | `core/error/error_api.dart` | Error de dominio con el catálogo de códigos del §5.2 |
 | `core/storage/almacen_sesion.dart` | Credencial de sesión en el almacén cifrado del sistema |
-| `data/api_cliente.dart` | Sobre del contrato, cookies, doble envío CSRF y las cuatro acciones |
+| `data/api_cliente.dart` | Sobre del contrato, cookies, doble envío CSRF, las cuatro acciones, el catálogo de balones y la venta tarreo |
 | `data/controlador_entregas.dart` | Único dueño de los datos del panel, compartido por las dos pantallas |
-| `data/datos_mock.dart` | **Solo el catálogo de balones del Tarreo**, todavía inventado |
+| `data/controlador_balones.dart` | Único dueño del catálogo de balones; los precios son los del servidor |
 | `models/` | `Pedido`, `LineaPedido`, `Usuario`, `ResumenEntregas` y formato de CLP |
 | `screens/` | Login, Inicio, Entregas, Mis Entregas, Tarreo |
 | `theme/`, `widgets/` | Espejo de la PWA (Bootstrap 5) |
 
 ### 18.2 Lo que todavía NO hace (a propósito)
 
-- **El Tarreo no registra nada**: solo avisa en pantalla y usa precios inventados de `DatosMock`. Faltan `POST /api/v1/tarreo/` y `GET /api/v1/balones/` (F4).
 - **Sin idempotencia**: un reintento tras un corte de señal puede repetir una acción. Requiere `Idempotency-Key` en el servidor (§8) más la cola local.
 - **Sin cola offline ni caché**: con el servidor caído solo se ve la última lista conocida, marcada como vieja.
 - El reloj del Inicio usa la hora del teléfono; debe pasar a `servidor_ahora`.
-- "Editar Pedido" (venta extra) sigue siendo un aviso: es F4.
-- Falta el modal de confirmación de la venta tarreo, y los botones de cantidad del Tarreo no tienen etiqueta de accesibilidad.
+- "Editar Pedido" (venta extra) sigue siendo un aviso: el contrato todavía no tiene ese endpoint.
+- **Ninguna pantalla usa ya datos inventados**: `DatosMock` se borró con F4. `grep -r DatosMock lib/` no debe devolver nada.
 
 ### 18.3 Cómo depurar en el teléfono (sin pedir capturas)
 
