@@ -668,30 +668,36 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 | Fase | Estado |
 |---|---|
 | Toolchain | ✅ Flutter 3.47.6 + Android SDK 36 (§17.4) |
-| Repositorio | ✅ `gas_facil_movil`, rama `main`, dos commits subidos |
-| **F0** contrato de API | ⏳ pendiente — bloqueado por P-19 y por el spike de CSRF |
-| **F1** esqueleto + login + listado | 🟡 **maqueta con datos falsos**: sin login y sin API |
-| **F2**–**F9** | ⏳ pendientes |
+| Repositorio | ✅ `gas_facil_movil`, rama `main` |
+| **F0** contrato de API | ✅ `gas_project/docs/API_MOVIL.md`; el *spike* de CSRF quedó resuelto |
+| **F1** login + listado | ✅ probado en el teléfono contra el API real |
+| **F2** las cuatro acciones | ✅ API y app; probado de punta a punta (tomar un pedido) |
+| Sesión persistente | ✅ `flutter_secure_storage` (Keystore), confirmada contra `/auth/perfil/` |
+| **F4** en adelante (`tarreo/`, `balones/`, `resumen-hoy/`, `historial/`) | ⏳ no existe todavía |
 
 ### 18.1 Qué existe hoy en `lib/`
 
 | Archivo | Contenido |
 |---|---|
-| `main.dart` / `app.dart` | Arranque y contenedor con la barra inferior de cuatro destinos |
-| `theme/app_theme.dart` | Colores y medidas espejo de la PWA (Bootstrap 5) |
-| `models/pedido.dart` | `Pedido`, `LineaPedido`, `TipoBalon`, enums y formato de CLP |
-| `data/datos_mock.dart` | Datos de prueba inventados, **a reemplazar por el repositorio de la API** |
-| `screens/` | Inicio, Entregas, Mis Entregas, Tarreo |
-| `widgets/` | Barra inferior, botón grande, tarjeta de pedido, diálogo de confirmación y comunes |
+| `main.dart` / `app.dart` | Arranque, reapertura de sesión y contenedor con la barra de cuatro destinos |
+| `core/config/api_config.dart` | `baseUrl` y `Origin` por `--dart-define` |
+| `core/error/error_api.dart` | Error de dominio con el catálogo de códigos del §5.2 |
+| `core/storage/almacen_sesion.dart` | Credencial de sesión en el almacén cifrado del sistema |
+| `data/api_cliente.dart` | Sobre del contrato, cookies, doble envío CSRF y las cuatro acciones |
+| `data/controlador_entregas.dart` | Único dueño de los datos del panel, compartido por las dos pantallas |
+| `data/datos_mock.dart` | **Solo el catálogo de balones del Tarreo**, todavía inventado |
+| `models/` | `Pedido`, `LineaPedido`, `Usuario`, `ResumenEntregas` y formato de CLP |
+| `screens/` | Login, Inicio, Entregas, Mis Entregas, Tarreo |
+| `theme/`, `widgets/` | Espejo de la PWA (Bootstrap 5) |
 
-### 18.2 Lo que la maqueta todavía NO hace (a propósito)
+### 18.2 Lo que todavía NO hace (a propósito)
 
-- **No llama a ninguna API.** `DatosMock` está cableado directo en las pantallas; sustituirlo por un repositorio es el trabajo de F1.
-- No hay login, sesión ni validación de rol.
-- No hay cola offline, caché ni idempotencia.
+- **El Tarreo no registra nada**: solo avisa en pantalla y usa precios inventados de `DatosMock`. Faltan `POST /api/v1/tarreo/` y `GET /api/v1/balones/` (F4).
+- **Sin idempotencia**: un reintento tras un corte de señal puede repetir una acción. Requiere `Idempotency-Key` en el servidor (§8) más la cola local.
+- **Sin cola offline ni caché**: con el servidor caído solo se ve la última lista conocida, marcada como vieja.
 - El reloj del Inicio usa la hora del teléfono; debe pasar a `servidor_ahora`.
-- Las acciones (tomar, entregar, cancelar, devolver, tarreo) **solo confirman y avisan: no cambian nada**.
-- **No hay descuentos.** La PWA los muestra en el panel de entregas con un bloque rojo "CON DESCUENTO", el desglose de subtotal y el subtotal neto por línea (`partials/_pedido_desglose_camionero.html`). El móvil todavía no lo representa porque los datos de prueba no traen descuentos. Entra junto con la API.
+- "Editar Pedido" (venta extra) sigue siendo un aviso: es F4.
+- Falta el modal de confirmación de la venta tarreo, y los botones de cantidad del Tarreo no tienen etiqueta de accesibilidad.
 
 ### 18.3 Cómo depurar en el teléfono (sin pedir capturas)
 
