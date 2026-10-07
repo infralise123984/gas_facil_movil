@@ -1,31 +1,42 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'boton_accion.dart';
 
 /// Contenedor base de todas las pantallas del camionero.
 ///
 /// Reproduce el layout de la PWA: una sola columna, ancho máximo de 540 px,
 /// con scroll y aire suficiente para dedos grandes.
 class CuerpoPantalla extends StatelessWidget {
-  const CuerpoPantalla({super.key, required this.children});
+  const CuerpoPantalla({super.key, required this.children, this.onRefrescar});
 
   final List<Widget> children;
 
+  /// Si se entrega, la pantalla se recarga al deslizarla hacia abajo.
+  final Future<void> Function()? onRefrescar;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    final Future<void> Function()? refresco = onRefrescar;
+
+    final Widget contenido = SingleChildScrollView(
+      // Sin esto no se puede deslizar cuando el contenido es más corto que la
+      // pantalla, y el gesto de recarga no se activa justo cuando más hace
+      // falta: con la lista vacía.
+      physics: refresco == null ? null : const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(maxWidth: MedidasApp.anchoMaximoContenido),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: children,
-          ),
+          constraints: const BoxConstraints(maxWidth: MedidasApp.anchoMaximoContenido),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
         ),
       ),
     );
+
+    if (refresco == null) {
+      return contenido;
+    }
+    return RefreshIndicator(onRefresh: refresco, child: contenido);
   }
 }
 
@@ -55,11 +66,7 @@ class TituloPantalla extends StatelessWidget {
             child: Text(
               texto,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: color),
             ),
           ),
         ],
@@ -110,11 +117,7 @@ class ContadorChip extends StatelessWidget {
         child: Text(
           texto,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -144,16 +147,71 @@ class EstadoVacio extends StatelessWidget {
         children: <Widget>[
           const Icon(Icons.done_all, size: 54, color: ColoresApp.exito),
           const SizedBox(height: 14),
-          Text(
-            titulo,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
+          Text(titulo, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(
             mensaje,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 17, color: ColoresApp.secundario),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Estado de espera mientras el servidor responde.
+///
+/// Sin `Center`: estas pantallas viven dentro de un desplazamiento vertical, y
+/// centrar en el alto libre deja el alto sin acotar.
+class PantallaCargando extends StatelessWidget {
+  const PantallaCargando({super.key, this.mensaje = 'Cargando…'});
+
+  final String mensaje;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const CircularProgressIndicator(),
+          const SizedBox(height: 18),
+          Text(
+            mensaje,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 17, color: ColoresApp.secundario),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Error recuperable: explica qué pasó y deja reintentar.
+class PantallaError extends StatelessWidget {
+  const PantallaError({super.key, required this.mensaje, required this.onReintentar});
+
+  final String mensaje;
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Icon(Icons.cloud_off, size: 62, color: ColoresApp.peligro),
+          const SizedBox(height: 18),
+          Text(
+            mensaje,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 26),
+          BotonAccion(etiqueta: 'Reintentar', icono: Icons.refresh, onPressed: onReintentar),
         ],
       ),
     );
@@ -182,10 +240,7 @@ class AvisoInfo extends StatelessWidget {
           Icon(icono, color: ColoresApp.primario),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              texto,
-              style: const TextStyle(fontSize: 16, color: Color(0xFF084298)),
-            ),
+            child: Text(texto, style: const TextStyle(fontSize: 16, color: Color(0xFF084298))),
           ),
         ],
       ),

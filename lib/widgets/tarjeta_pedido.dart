@@ -33,11 +33,11 @@ class TarjetaPedido extends StatelessWidget {
   bool get _cancelado => pedido.estado == EstadoPedido.cancelado;
 
   Color get _colorBorde => switch (pedido.estado) {
-        EstadoPedido.pendiente => ColoresApp.info,
-        EstadoPedido.enRuta => ColoresApp.advertencia,
-        EstadoPedido.entregado => ColoresApp.exito,
-        EstadoPedido.cancelado => ColoresApp.peligro,
-      };
+    EstadoPedido.pendiente => ColoresApp.info,
+    EstadoPedido.enRuta => ColoresApp.advertencia,
+    EstadoPedido.entregado => ColoresApp.exito,
+    EstadoPedido.cancelado => ColoresApp.peligro,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +70,7 @@ class TarjetaPedido extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _DesgloseProductos(
-                  pedido: pedido,
-                  mostrarTitulo: mostrarTituloProductos,
-                ),
+                _DesgloseProductos(pedido: pedido, mostrarTitulo: mostrarTituloProductos),
                 const SizedBox(height: 16),
                 _Ubicacion(pedido: pedido),
                 if (mostrarFecha) ...<Widget>[
@@ -81,10 +78,7 @@ class TarjetaPedido extends StatelessWidget {
                   Text(
                     _textoFecha(),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: ColoresApp.secundario,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: ColoresApp.secundario, fontSize: 14),
                   ),
                 ],
                 if (acciones.isNotEmpty) ...<Widget>[
@@ -116,11 +110,7 @@ class TarjetaPedido extends StatelessWidget {
           SizedBox(width: 8),
           Text(
             'PEDIDO CANCELADO',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
           ),
         ],
       ),
@@ -163,35 +153,86 @@ class _DesgloseProductos extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    '${linea.cantidad} × ${linea.balon.nombre}',
+                    '${linea.cantidad} × ${linea.balonNombre}',
                     style: TextStyle(
                       fontSize: 18,
                       decoration: cancelado ? TextDecoration.lineThrough : null,
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: cancelado ? ColoresApp.peligro : ColoresApp.exito,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    formatearClp(linea.subtotal),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: cancelado ? ColoresApp.peligro : ColoresApp.exito,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        // El distintivo muestra el **neto** de la línea, igual que
+                        // `_pedido_desglose_camionero.html`: si mostrara el bruto, no
+                        // cuadraría con el total cuando hay descuento.
+                        formatearClp(linea.subtotalNeto),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (linea.descuentoUnitario > 0) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(
+                        '−${formatearClp(linea.descuentoUnitario)} por balón',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: ColoresApp.peligro,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
         const SizedBox(height: 12),
+        if (pedido.tieneDescuento) ...<Widget>[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0x1ADC3545),
+              border: Border.all(color: ColoresApp.peligro),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              children: <Widget>[
+                Text(
+                  'CON DESCUENTO −${formatearClp(pedido.descuentoTotal)}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: ColoresApp.peligro,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _FilaDescuento(etiqueta: 'Subtotal', valor: formatearClp(pedido.subtotalBruto)),
+                _FilaDescuento(
+                  etiqueta: 'Descuento',
+                  valor: '−${formatearClp(pedido.descuentoTotal)}',
+                  destacado: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (cancelado) ...<Widget>[
           Text(
             formatearClp(pedido.montoTotal),
@@ -207,11 +248,7 @@ class _DesgloseProductos extends StatelessWidget {
           const Text(
             'NO COBRADO',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ColoresApp.peligro,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ColoresApp.peligro),
           ),
         ] else
           Text(
@@ -223,6 +260,42 @@ class _DesgloseProductos extends StatelessWidget {
               color: ColoresApp.exito,
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Fila de etiqueta y monto del recuadro de descuento.
+class _FilaDescuento extends StatelessWidget {
+  const _FilaDescuento({required this.etiqueta, required this.valor, this.destacado = false});
+
+  final String etiqueta;
+  final String valor;
+  final bool destacado;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = destacado ? ColoresApp.peligro : ColoresApp.secundario;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(
+          etiqueta,
+          style: TextStyle(
+            fontSize: 15,
+            color: color,
+            fontWeight: destacado ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+        Text(
+          valor,
+          style: TextStyle(
+            fontSize: 15,
+            color: color,
+            fontWeight: destacado ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
       ],
     );
   }
@@ -246,10 +319,7 @@ class _Ubicacion extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const Text(
-          'Dirección:',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        const Text('Dirección:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text(
           pedido.direccionEntrega,

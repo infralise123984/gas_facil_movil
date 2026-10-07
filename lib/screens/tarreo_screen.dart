@@ -19,11 +19,7 @@ class TarreoScreen extends StatefulWidget {
 }
 
 class _TarreoScreenState extends State<TarreoScreen> {
-  static const List<String> _metodosPago = <String>[
-    'efectivo',
-    'tarjeta',
-    'transferencia',
-  ];
+  static const List<String> _metodosPago = <String>['efectivo', 'tarjeta', 'transferencia'];
 
   final Map<int, int> _cantidades = <int, int>{};
   final TextEditingController _direccion = TextEditingController();
@@ -190,10 +186,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
-          _BotonCantidad(
-            icono: Icons.add,
-            onTap: () => _cambiarCantidad(balon, 1),
-          ),
+          _BotonCantidad(icono: Icons.add, onTap: () => _cambiarCantidad(balon, 1)),
         ],
       ),
     );
@@ -230,10 +223,7 @@ class _Etiqueta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      texto,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    );
+    return Text(texto, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
   }
 }
 
@@ -256,11 +246,7 @@ class _BotonCantidad extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: Icon(
-            icono,
-            size: 28,
-            color: habilitado ? Colors.white : ColoresApp.secundario,
-          ),
+          child: Icon(icono, size: 28, color: habilitado ? Colors.white : ColoresApp.secundario),
         ),
       ),
     );

@@ -4,4 +4,9 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- En depuración el servidor de desarrollo se alcanza por HTTP en claro
+         (adb reverse tcp:8000). La configuración solo permite ese caso: la
+         compilación de producción sigue exigiendo HTTPS. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
 </manifest>

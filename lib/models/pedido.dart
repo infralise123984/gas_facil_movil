@@ -1,29 +1,42 @@
-/// Modelos de la maqueta.
+/// Objetos del contrato del API (docs/API_MOVIL.md §7.2).
 ///
-/// Los nombres espejan los modelos Django de `gas_project` (`mockups/models.py`)
-/// para que reemplazar `DatosMock` por la API sea un cambio acotado.
+/// Los nombres espejan los modelos Django de `gas_project` (`mockups/models.py`).
+/// El servidor siempre manda enteros en pesos y fechas ISO: acá solo se arma el
+/// objeto, el formato lo pone la interfaz.
 library;
 
+/// Estado del pedido. Coincide con `Pedido.ESTADOS` del servidor.
 enum EstadoPedido {
-  pendiente('Pendiente'),
-  enRuta('En ruta'),
-  entregado('Entregado'),
-  cancelado('Cancelado');
+  pendiente,
+  enRuta,
+  entregado,
+  cancelado;
 
-  const EstadoPedido(this.etiqueta);
-
-  final String etiqueta;
+  /// Traduce el valor del servidor. Un valor desconocido es un desacuerdo de
+  /// contrato, no algo que se pueda adivinar: se lanza y se detiene ahí.
+  static EstadoPedido desdeApi(String valor) => switch (valor) {
+    'pendiente' => EstadoPedido.pendiente,
+    'en_ruta' => EstadoPedido.enRuta,
+    'entregado' => EstadoPedido.entregado,
+    'cancelado' => EstadoPedido.cancelado,
+    _ => throw FormatException('Estado de pedido desconocido: $valor'),
+  };
 }
 
+/// Origen del pedido. Coincide con `Pedido.ORIGENES` del servidor.
 enum OrigenPedido {
-  telefono('Teléfono / Domicilio'),
-  local('Venta en local'),
-  tarreo('Venta por tarreo'),
-  ventaExtra('Venta adicional en entrega');
+  telefono,
+  local,
+  tarreo,
+  ventaExtra;
 
-  const OrigenPedido(this.etiqueta);
-
-  final String etiqueta;
+  static OrigenPedido desdeApi(String valor) => switch (valor) {
+    'telefono' => OrigenPedido.telefono,
+    'local' => OrigenPedido.local,
+    'tarreo' => OrigenPedido.tarreo,
+    'venta_extra' => OrigenPedido.ventaExtra,
+    _ => throw FormatException('Origen de pedido desconocido: $valor'),
+  };
 }
 
 class TipoBalon {
@@ -46,19 +59,43 @@ class TipoBalon {
   final int precioLocal;
 }
 
+/// Línea de un pedido, tal como la entrega `serializar_linea`.
+///
+/// Los montos vienen del servidor y no se recalculan. `subtotal` es el bruto y
+/// `subtotalNeto` el que queda después del descuento de la línea.
 class LineaPedido {
   const LineaPedido({
-    required this.balon,
+    required this.balonId,
+    required this.balonNombre,
+    required this.pesoNetoGas,
     required this.cantidad,
     required this.precioVentaUnitario,
+    required this.descuentoUnitario,
+    required this.subtotal,
+    required this.subtotalNeto,
   });
 
-  final TipoBalon balon;
+  factory LineaPedido.desdeJson(Map<String, dynamic> json) => LineaPedido(
+    balonId: json['balon_id'] as int,
+    balonNombre: json['balon_nombre'] as String,
+    pesoNetoGas: json['peso_neto_gas'] as int,
+    cantidad: json['cantidad'] as int,
+    precioVentaUnitario: json['precio_venta_unitario'] as int,
+    descuentoUnitario: json['descuento_unitario'] as int,
+    subtotal: json['subtotal'] as int,
+    subtotalNeto: json['subtotal_neto'] as int,
+  );
+
+  final int balonId;
+  final String balonNombre;
+  final int pesoNetoGas;
   final int cantidad;
   final int precioVentaUnitario;
+  final int descuentoUnitario;
+  final int subtotal;
+  final int subtotalNeto;
 
-  int get subtotal => precioVentaUnitario * cantidad;
-  int get kilos => balon.pesoNetoKg * cantidad;
+  int get kilos => pesoNetoGas * cantidad;
 }
 
 class Pedido {
@@ -68,28 +105,71 @@ class Pedido {
     required this.origen,
     required this.lineas,
     required this.fecha,
+    required this.montoTotal,
+    required this.kilos,
+    required this.subtotalBruto,
+    required this.descuentoTotal,
+    required this.tieneDescuento,
     this.sector = '',
     this.direccionEntrega = '',
     this.metodoPago = 'efectivo',
   });
+
+  factory Pedido.desdeJson(Map<String, dynamic> json) {
+    final List<dynamic> lineasJson = json['lineas'] as List<dynamic>;
+
+    return Pedido(
+      id: json['id'] as int,
+      estado: EstadoPedido.desdeApi(json['estado'] as String),
+      origen: OrigenPedido.desdeApi(json['origen'] as String),
+      lineas: lineasJson
+          .map((dynamic linea) => LineaPedido.desdeJson(linea as Map<String, dynamic>))
+          .toList(),
+      fecha: _fechaDesde(json['fecha']),
+      montoTotal: json['monto_total'] as int,
+      kilos: json['kilos'] as int,
+      subtotalBruto: json['subtotal_bruto'] as int,
+      descuentoTotal: json['descuento_total'] as int,
+      tieneDescuento: json['tiene_descuento'] as bool,
+      sector: json['sector'] as String? ?? '',
+      direccionEntrega: json['direccion_entrega'] as String? ?? '',
+      metodoPago: json['metodo_pago'] as String? ?? 'efectivo',
+    );
+  }
 
   final int id;
   final EstadoPedido estado;
   final OrigenPedido origen;
   final List<LineaPedido> lineas;
   final DateTime fecha;
+
+  /// Monto **neto** (bruto menos descuentos). Viene calculado del servidor: la
+  /// app no lo recalcula, porque el servidor es la única fuente de verdad del
+  /// dinero (docs/API_MOVIL.md §7.2).
+  final int montoTotal;
+
+  final int kilos;
+  final int subtotalBruto;
+  final int descuentoTotal;
+  final bool tieneDescuento;
+
+  /// Sector tal cual lo guardó el servidor. Es texto libre sin catálogo: no se
+  /// intenta mapear ni traducir.
   final String sector;
+
   final String direccionEntrega;
   final String metodoPago;
+}
 
-  int get montoTotal =>
-      lineas.fold(0, (total, linea) => total + linea.subtotal);
-
-  int get kilos => lineas.fold(0, (total, linea) => total + linea.kilos);
-
-  /// Texto corto para listas: `2×11kg + 1×5kg`.
-  String get resumenProductos =>
-      lineas.map((linea) => '${linea.cantidad}×${linea.balon.pesoNetoKg}kg').join(' + ');
+DateTime _fechaDesde(Object? valor) {
+  if (valor is! String) {
+    throw const FormatException('El pedido llegó sin fecha.');
+  }
+  // El servidor ya manda la hora de Chile y así la muestra la web. Se lee como
+  // hora de pared, sin desplazamiento: `DateTime.parse` con desfase devolvería
+  // UTC y el huso del teléfono correría la hora que ve el camionero.
+  final String horaDePared = valor.length > 19 ? valor.substring(0, 19) : valor;
+  return DateTime.parse(horaDePared);
 }
 
 /// Formatea un monto en pesos chilenos con separador de miles.

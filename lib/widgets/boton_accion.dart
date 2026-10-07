@@ -23,13 +23,13 @@ class BotonAccion extends StatelessWidget {
   final EstiloBoton estilo;
 
   Color get _color => switch (estilo) {
-        EstiloBoton.primario => ColoresApp.primario,
-        EstiloBoton.exito => ColoresApp.exito,
-        EstiloBoton.peligro => ColoresApp.peligro,
-        EstiloBoton.advertencia => ColoresApp.advertencia,
-        EstiloBoton.secundario => ColoresApp.secundario,
-        EstiloBoton.contorno => ColoresApp.secundario,
-      };
+    EstiloBoton.primario => ColoresApp.primario,
+    EstiloBoton.exito => ColoresApp.exito,
+    EstiloBoton.peligro => ColoresApp.peligro,
+    EstiloBoton.advertencia => ColoresApp.advertencia,
+    EstiloBoton.secundario => ColoresApp.secundario,
+    EstiloBoton.contorno => ColoresApp.secundario,
+  };
 
   Color get _colorTexto {
     if (estilo == EstiloBoton.contorno) {
@@ -65,9 +65,7 @@ class BotonAccion extends StatelessWidget {
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: ColoresApp.secundario, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: contenido,
             )
@@ -75,9 +73,7 @@ class BotonAccion extends StatelessWidget {
               onPressed: onPressed,
               style: FilledButton.styleFrom(
                 backgroundColor: _color,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: contenido,
             ),

@@ -7,11 +7,7 @@ import '../theme/app_theme.dart';
 /// Réplica exacta de la barra de `base.html`: cuatro destinos, con Tarreo
 /// destacado en verde. No se agregan ni se quitan ítems.
 class BarraNavegacionCamionero extends StatelessWidget {
-  const BarraNavegacionCamionero({
-    super.key,
-    required this.indice,
-    required this.onCambiar,
-  });
+  const BarraNavegacionCamionero({super.key, required this.indice, required this.onCambiar});
 
   final int indice;
   final ValueChanged<int> onCambiar;

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permite tráfico HTTP en claro SOLO hacia el servidor de desarrollo local, que
+  se alcanza desde el teléfono con `adb reverse tcp:8000 tcp:8000`.
+
+  Este archivo vive en `src/debug/`, así que no afecta a la compilación de
+  producción: la app publicada sigue exigiendo HTTPS.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- Dirección del equipo anfitrión vista desde el emulador de Android. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

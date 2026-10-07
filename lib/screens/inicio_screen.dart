@@ -9,9 +9,12 @@ import '../theme/app_theme.dart';
 /// Espejo de `index.html` para el rol camionero: logo, reloj y tres accesos
 /// (Entregas Pendientes, Mis Entregas Hoy, Historial de Ventas).
 class InicioScreen extends StatefulWidget {
-  const InicioScreen({super.key, required this.onIrAPestana});
+  const InicioScreen({super.key, required this.onIrAPestana, required this.nombreUsuario});
 
   final ValueChanged<int> onIrAPestana;
+
+  /// Nombre del camionero que tiene la sesión abierta, para el saludo.
+  final String nombreUsuario;
 
   @override
   State<InicioScreen> createState() => _InicioScreenState();
@@ -46,11 +49,27 @@ class _InicioScreenState extends State<InicioScreen> {
 
   String get _fechaTexto {
     const List<String> dias = <String>[
-      'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo',
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+      'domingo',
     ];
     const List<String> meses = <String>[
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre',
     ];
     final int diaSemana = _ahora.weekday - 1;
     return '${dias[diaSemana]} ${_ahora.day} de ${meses[_ahora.month - 1]}';
@@ -117,10 +136,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 style: TextStyle(fontSize: 12, color: ColoresApp.secundario),
               ),
               const SizedBox(height: 26),
-              const Text(
-                'Bienvenido, Camionero',
+              Text(
+                'Bienvenido, ${widget.nombreUsuario}',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -162,8 +181,10 @@ class _InicioScreenState extends State<InicioScreen> {
   void _historialPendiente() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('El historial llega en una fase posterior (F6).',
-            style: TextStyle(fontSize: 16)),
+        content: Text(
+          'El historial llega en una fase posterior (F6).',
+          style: TextStyle(fontSize: 16),
+        ),
       ),
     );
   }
@@ -216,10 +237,7 @@ class _AccesoTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    titulo,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
+                  Text(titulo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 3),
                   Text(
                     subtitulo,
