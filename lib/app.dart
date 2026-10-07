@@ -256,6 +256,7 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
             api: widget.api,
             balones: widget.balones,
             entregas: widget.entregas,
+            onVentaGuardada: () => _cambiarPestana(0),
           ),
         ],
       ),

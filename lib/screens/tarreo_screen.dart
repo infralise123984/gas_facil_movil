@@ -32,6 +32,7 @@ class TarreoScreen extends StatefulWidget {
     required this.api,
     required this.balones,
     required this.entregas,
+    required this.onVentaGuardada,
   });
 
   final ApiCliente api;
@@ -42,6 +43,10 @@ class TarreoScreen extends StatefulWidget {
   /// La venta queda como actividad del día del camionero: al registrarla se
   /// recarga este controlador para que aparezca en "Mis Entregas Hoy".
   final ControladorEntregas entregas;
+
+  /// Se avisa al contenedor para que vuelva al inicio después de guardar: la
+  /// web termina en un `redirect`, no dejando el formulario abierto.
+  final VoidCallback onVentaGuardada;
 
   @override
   State<TarreoScreen> createState() => _TarreoScreenState();
@@ -451,6 +456,13 @@ class _TarreoScreenState extends State<TarreoScreen> {
       // La venta ya es actividad del día: se recarga para que el camionero la
       // vea en "Mis Entregas Hoy" sin tener que salir y volver a entrar.
       await widget.entregas.cargar();
+      if (!mounted) {
+        return;
+      }
+
+      // Como la web, que redirige al guardar: el formulario no se queda
+      // abierto. El aviso de éxito lo sigue mostrando el mismo Scaffold.
+      widget.onVentaGuardada();
     } on ErrorApi catch (error) {
       if (mounted) {
         mostrarAviso(context, error.mensaje);

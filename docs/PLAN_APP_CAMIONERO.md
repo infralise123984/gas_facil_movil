@@ -700,6 +700,7 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 - **Sin cola offline ni caché**: con el servidor caído solo se ve la última lista conocida, marcada como vieja.
 - **El detalle de un día no tiene el botón "Ver vista de hoy"** que la web muestra cuando el día es hoy: en la app se llega por la pestaña "Mis Entregas", que ya está siempre en la barra.
 - **`GET /api/v1/resumen-hoy/` no lo consume la app**: `/entregas/` ya trae esos datos y el inicio de la web no muestra números en las tarjetas. Queda para el refresco liviano del inicio.
+- **Después de guardar, el Tarreo vuelve al inicio**; la web redirige a "Mis Entregas" (`entregas_mias`). Decisión del dueño: el camionero termina la venta y vuelve al menú.
 - **El Tarreo no ofrece "Transferencia"** aunque el API lo acepte: la web solo muestra Efectivo y Tarjeta, y la app copia la pantalla, no el modelo. Tampoco hay método preseleccionado (en la web el campo es obligatorio y empieza vacío).
 - "Editar Pedido" (venta extra) sigue siendo un aviso: el contrato todavía no tiene ese endpoint.
 - **Ninguna pantalla usa ya datos inventados**: `DatosMock` se borró con F4. `grep -r DatosMock lib/` no debe devolver nada.
