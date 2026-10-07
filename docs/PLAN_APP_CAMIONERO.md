@@ -674,7 +674,7 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 | **F2** las cuatro acciones | ✅ API y app; probado de punta a punta (tomar un pedido) |
 | Sesión persistente | ✅ `flutter_secure_storage` (Keystore), confirmada contra `/auth/perfil/` y con la cookie cifrada en el disco del teléfono |
 | **F4** `tarreo/` y `balones/` | ✅ API (13 tests) y app: el Tarreo vende contra el catálogo real, sin precios inventados |
-| **F6** `resumen-hoy/` e `historial/` | ⏳ no existe todavía |
+| **F6** `resumen-hoy/` e `historial/` | ✅ API (11 tests) y app: historial del mes con detalle por día, y el reloj del inicio ahora es el del servidor |
 | Idempotencia (`Idempotency-Key`) | ⏳ requiere una migración en el servidor (§8 del contrato) |
 
 ### 18.1 Qué existe hoy en `lib/`
@@ -685,18 +685,20 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 | `core/config/api_config.dart` | `baseUrl` y `Origin` por `--dart-define` |
 | `core/error/error_api.dart` | Error de dominio con el catálogo de códigos del §5.2 |
 | `core/storage/almacen_sesion.dart` | Credencial de sesión en el almacén cifrado del sistema |
-| `data/api_cliente.dart` | Sobre del contrato, cookies, doble envío CSRF, las cuatro acciones, el catálogo de balones y la venta tarreo |
+| `core/time/reloj_servidor.dart` | Desfase contra `servidor_ahora`: el reloj del teléfono no se usa |
+| `data/api_cliente.dart` | Sobre del contrato, cookies, doble envío CSRF, las cuatro acciones, el catálogo de balones, la venta tarreo y el historial |
 | `data/controlador_entregas.dart` | Único dueño de los datos del panel, compartido por las dos pantallas |
 | `data/controlador_balones.dart` | Único dueño del catálogo de balones; los precios son los del servidor |
-| `models/` | `Pedido`, `LineaPedido`, `Usuario`, `ResumenEntregas` y formato de CLP |
-| `screens/` | Login, Inicio, Entregas, Mis Entregas, Tarreo |
+| `models/` | `Pedido`, `LineaPedido`, `Usuario`, `ResumenEntregas`, `HistorialMes`/`DiaHistorial`/`DetalleDia` y formato de CLP |
+| `screens/` | Login, Inicio, Entregas, Mis Entregas, Tarreo, Historial y Detalle del día |
 | `theme/`, `widgets/` | Espejo de la PWA (Bootstrap 5) |
 
 ### 18.2 Lo que todavía NO hace (a propósito)
 
 - **Sin idempotencia**: un reintento tras un corte de señal puede repetir una acción. Requiere `Idempotency-Key` en el servidor (§8) más la cola local.
 - **Sin cola offline ni caché**: con el servidor caído solo se ve la última lista conocida, marcada como vieja.
-- El reloj del Inicio usa la hora del teléfono; debe pasar a `servidor_ahora`.
+- **El detalle de un día no tiene el botón "Ver vista de hoy"** que la web muestra cuando el día es hoy: en la app se llega por la pestaña "Mis Entregas", que ya está siempre en la barra.
+- **`GET /api/v1/resumen-hoy/` no lo consume la app**: `/entregas/` ya trae esos datos y el inicio de la web no muestra números en las tarjetas. Queda para el refresco liviano del inicio.
 - "Editar Pedido" (venta extra) sigue siendo un aviso: el contrato todavía no tiene ese endpoint.
 - **Ninguna pantalla usa ya datos inventados**: `DatosMock` se borró con F4. `grep -r DatosMock lib/` no debe devolver nada.
 

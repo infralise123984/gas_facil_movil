@@ -120,6 +120,7 @@ class Pedido {
     this.sector = '',
     this.direccionEntrega = '',
     this.metodoPago = 'efectivo',
+    this.origenEtiqueta = '',
   });
 
   factory Pedido.desdeJson(Map<String, dynamic> json) {
@@ -129,6 +130,7 @@ class Pedido {
       id: json['id'] as int,
       estado: EstadoPedido.desdeApi(json['estado'] as String),
       origen: OrigenPedido.desdeApi(json['origen'] as String),
+      origenEtiqueta: json['origen_etiqueta'] as String? ?? '',
       lineas: lineasJson
           .map((dynamic linea) => LineaPedido.desdeJson(linea as Map<String, dynamic>))
           .toList(),
@@ -147,6 +149,11 @@ class Pedido {
   final int id;
   final EstadoPedido estado;
   final OrigenPedido origen;
+
+  /// Etiqueta del origen tal como la manda el servidor ("Teléfono /
+  /// Domicilio", "Tarreo"): la app no la traduce.
+  final String origenEtiqueta;
+
   final List<LineaPedido> lineas;
   final DateTime fecha;
 
@@ -166,6 +173,15 @@ class Pedido {
 
   final String direccionEntrega;
   final String metodoPago;
+
+  /// Texto corto para listas: `2×11kg + 1×5kg`. Espeja
+  /// `Pedido.resumen_productos` de la web; los kilos por balón ya vienen en cada
+  /// línea, así que no hace falta otra consulta.
+  String get resumenProductos => lineas.isEmpty
+      ? '—'
+      : lineas
+            .map((LineaPedido linea) => '${linea.cantidad}×${linea.pesoNetoGas}kg')
+            .join(' + ');
 }
 
 DateTime _fechaDesde(Object? valor) {
@@ -197,9 +213,16 @@ String formatearClp(int monto) {
   return '${monto < 0 ? '-' : ''}\$${buffer.toString()}';
 }
 
+String _dosDigitos(int valor) => valor.toString().padLeft(2, '0');
+
+/// Fecha en el formato corto que usa la PWA: `06/10/2026`.
+String formatearFecha(DateTime fecha) =>
+    '${_dosDigitos(fecha.day)}/${_dosDigitos(fecha.month)}/${fecha.year}';
+
+/// Hora en el formato corto que usa la PWA: `14:35`.
+String formatearHora(DateTime fecha) =>
+    '${_dosDigitos(fecha.hour)}:${_dosDigitos(fecha.minute)}';
+
 /// Fecha y hora en el formato corto que usa la PWA: `06/10/2026 14:35`.
-String formatearFechaHora(DateTime fecha) {
-  String dos(int valor) => valor.toString().padLeft(2, '0');
-  return '${dos(fecha.day)}/${dos(fecha.month)}/${fecha.year} '
-      '${dos(fecha.hour)}:${dos(fecha.minute)}';
-}
+String formatearFechaHora(DateTime fecha) =>
+    '${formatearFecha(fecha)} ${formatearHora(fecha)}';

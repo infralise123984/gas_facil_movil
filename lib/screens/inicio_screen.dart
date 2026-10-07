@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/time/reloj_servidor.dart';
 import '../theme/app_theme.dart';
 
 /// Pantalla de inicio.
@@ -9,38 +10,52 @@ import '../theme/app_theme.dart';
 /// Espejo de `index.html` para el rol camionero: logo, reloj y tres accesos
 /// (Entregas Pendientes, Mis Entregas Hoy, Historial de Ventas).
 class InicioScreen extends StatefulWidget {
-  const InicioScreen({super.key, required this.onIrAPestana, required this.nombreUsuario});
+  const InicioScreen({
+    super.key,
+    required this.onIrAPestana,
+    required this.nombreUsuario,
+    required this.reloj,
+    required this.onVerHistorial,
+  });
 
   final ValueChanged<int> onIrAPestana;
 
   /// Nombre del camionero que tiene la sesión abierta, para el saludo.
   final String nombreUsuario;
 
+  /// Hora del servidor: el reloj de la PWA no es el del teléfono.
+  final RelojServidor reloj;
+
+  /// Abre el historial de ventas. La navegación la arma el contenedor, que es
+  /// quien tiene el cliente del API.
+  final VoidCallback onVerHistorial;
+
   @override
   State<InicioScreen> createState() => _InicioScreenState();
 }
 
 class _InicioScreenState extends State<InicioScreen> {
-  late Timer _reloj;
-  DateTime _ahora = DateTime.now();
+  late Timer _tictac;
 
   @override
   void initState() {
     super.initState();
-    // TODO(api): la PWA muestra la hora del SERVIDOR (`hora_servidor`).
-    // Se reemplaza por el campo `servidor_ahora` que devolverá cada endpoint.
-    _reloj = Timer.periodic(const Duration(seconds: 1), (_) {
+    // Se avanza con el reloj del teléfono, pero partiendo de la hora del
+    // servidor: cada respuesta del API reajusta el desfase (RelojServidor).
+    _tictac = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
-        setState(() => _ahora = DateTime.now());
+        setState(() {});
       }
     });
   }
 
   @override
   void dispose() {
-    _reloj.cancel();
+    _tictac.cancel();
     super.dispose();
   }
+
+  DateTime get _ahora => widget.reloj.ahora;
 
   String get _horaTexto {
     String dos(int valor) => valor.toString().padLeft(2, '0');
@@ -130,11 +145,15 @@ class _InicioScreenState extends State<InicioScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Provisorio: en la maqueta es la hora del teléfono.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: ColoresApp.secundario),
-              ),
+              // Sin respuesta del servidor todavía, el reloj es el del teléfono
+              // y hay que decirlo. En cuanto llega la primera respuesta, el
+              // aviso desaparece.
+              if (!widget.reloj.sincronizado)
+                const Text(
+                  'Provisorio: todavía no llegó la hora del servidor.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: ColoresApp.secundario),
+                ),
               const SizedBox(height: 26),
               Text(
                 'Bienvenido, ${widget.nombreUsuario}',
@@ -169,21 +188,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 titulo: 'Historial de Ventas',
                 subtitulo: 'Ventas anteriores',
                 color: ColoresApp.secundario,
-                onTap: () => _historialPendiente(),
+                onTap: widget.onVerHistorial,
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _historialPendiente() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'El historial llega en una fase posterior (F6).',
-          style: TextStyle(fontSize: 16),
         ),
       ),
     );

@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import '../core/config/api_config.dart';
 import '../core/error/error_api.dart';
 import '../core/storage/almacen_sesion.dart';
+import '../core/time/reloj_servidor.dart';
+import '../models/historial.dart';
 import '../models/pedido.dart';
 import '../models/resumen_entregas.dart';
 import '../models/usuario.dart';
@@ -39,15 +41,24 @@ class LoginRequiereSegundoFactor extends ResultadoLogin {
 /// las cookies como `Secure`; al viajar por HTTP en el desarrollo por USB, un
 /// gestor estándar las descartaría y el doble envío CSRF fallaría.
 class ApiCliente {
-  ApiCliente({required this.config, http.Client? clienteHttp, AlmacenSesion? almacen})
-    : _http = clienteHttp ?? http.Client(),
-      _almacenSesion = almacen ?? AlmacenSesionSeguro();
+  ApiCliente({
+    required this.config,
+    http.Client? clienteHttp,
+    AlmacenSesion? almacen,
+    RelojServidor? reloj,
+  }) : _http = clienteHttp ?? http.Client(),
+       _almacenSesion = almacen ?? AlmacenSesionSeguro(),
+       _reloj = reloj ?? RelojServidor();
 
   final ApiConfig config;
   final http.Client _http;
 
   /// Dónde vive la credencial de sesión entre arranques de la app.
   final AlmacenSesion _almacenSesion;
+
+  /// Hora del servidor. La app no usa el reloj del teléfono para nada visible:
+  /// un teléfono con la zona mal puesta mostraría otra jornada.
+  final RelojServidor _reloj;
 
   static const String rutaCsrf = '/api/v1/auth/csrf/';
   static const String rutaLogin = '/api/v1/auth/login/';
@@ -56,6 +67,7 @@ class ApiCliente {
   static const String rutaEntregas = '/api/v1/entregas/';
   static const String rutaTarreo = '/api/v1/tarreo/';
   static const String rutaBalones = '/api/v1/balones/';
+  static const String rutaHistorial = '/api/v1/historial/';
 
   /// Cookie de sesión de Django: es la credencial que se guarda.
   static const String _cookieSesion = 'sessionid';
@@ -199,6 +211,29 @@ class ApiCliente {
     return _mapear(() => Pedido.desdeJson(datos['pedido'] as Map<String, dynamic>));
   }
 
+  /// Resumen de un mes del historial, día por día (§7.5).
+  ///
+  /// `mes` en formato `AAAA-MM`. Sin él, el servidor devuelve el mes actual.
+  /// El formato lo construye el servidor a partir de lo que devolvió antes, así
+  /// que la app nunca arma un mes a mano.
+  Future<HistorialMes> historialMes({String? mes}) async {
+    final String ruta = (mes == null || mes.isEmpty)
+        ? rutaHistorial
+        : '$rutaHistorial?mes=$mes';
+    final Map<String, dynamic> sobre = await _enviar('GET', ruta);
+    return _mapear(
+      () => HistorialMes.desdeJson(sobre['data'] as Map<String, dynamic>),
+    );
+  }
+
+  /// Detalle de las ventas de un día (§7.5). Solo trae los entregados.
+  Future<DetalleDia> historialDia(String fecha) async {
+    final Map<String, dynamic> sobre = await _enviar('GET', '$rutaHistorial$fecha/');
+    return _mapear(
+      () => DetalleDia.desdeJson(sobre['data'] as Map<String, dynamic>),
+    );
+  }
+
   Future<void> cerrarSesion() async {
     try {
       await _enviar('POST', rutaLogout, cuerpo: const <String, Object?>{}, exigeCsrf: true);
@@ -252,6 +287,13 @@ class ApiCliente {
   /// Aplica el sobre del §5: si viene `error`, se lanza con su código estable.
   Map<String, dynamic> _interpretarSobre(http.Response respuesta) {
     final Map<String, dynamic> sobre = _decodificar(respuesta);
+
+    // Toda respuesta trae la hora del servidor (§5.1): con eso el reloj de la
+    // app deja de depender del reloj del teléfono.
+    final Object? ahora = sobre['servidor_ahora'];
+    if (ahora is String) {
+      _reloj.sincronizar(ahora);
+    }
 
     final Object? error = sobre['error'];
     if (error is Map<String, dynamic>) {

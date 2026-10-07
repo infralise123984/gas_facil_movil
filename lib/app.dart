@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'core/config/api_config.dart';
 import 'core/error/error_api.dart';
+import 'core/time/reloj_servidor.dart';
 import 'data/api_cliente.dart';
 import 'data/controlador_balones.dart';
 import 'data/controlador_entregas.dart';
 import 'models/usuario.dart';
 import 'screens/entregas_screen.dart';
+import 'screens/historial_screen.dart';
 import 'screens/inicio_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/mis_entregas_screen.dart';
@@ -29,8 +31,14 @@ class AppGasFacil extends StatefulWidget {
 }
 
 class _AppGasFacilState extends State<AppGasFacil> {
+  /// Hora del servidor, compartida por el cliente y la pantalla de inicio.
+  final RelojServidor _reloj = RelojServidor();
+
   /// Un solo cliente para toda la app: es quien guarda las cookies de sesión.
-  final ApiCliente _api = ApiCliente(config: ApiConfig.desdeEntorno());
+  late final ApiCliente _api = ApiCliente(
+    config: ApiConfig.desdeEntorno(),
+    reloj: _reloj,
+  );
 
   /// Un solo dueño de los datos del panel: las dos pantallas que los muestran
   /// leen de acá, así no se pisan ni quedan una más vieja que la otra.
@@ -144,6 +152,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
       api: _api,
       entregas: _entregas,
       balones: _balones,
+      reloj: _reloj,
       usuario: usuario,
       onSesionCerrada: _cerrarSesion,
     );
@@ -176,6 +185,7 @@ class PantallaCamionero extends StatefulWidget {
     required this.api,
     required this.entregas,
     required this.balones,
+    required this.reloj,
     required this.usuario,
     required this.onSesionCerrada,
   });
@@ -183,6 +193,7 @@ class PantallaCamionero extends StatefulWidget {
   final ApiCliente api;
   final ControladorEntregas entregas;
   final ControladorBalones balones;
+  final RelojServidor reloj;
   final Usuario usuario;
   final VoidCallback onSesionCerrada;
 
@@ -233,7 +244,12 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
       body: IndexedStack(
         index: _indice,
         children: <Widget>[
-          InicioScreen(onIrAPestana: _cambiarPestana, nombreUsuario: widget.usuario.nombre),
+          InicioScreen(
+            onIrAPestana: _cambiarPestana,
+            nombreUsuario: widget.usuario.nombre,
+            reloj: widget.reloj,
+            onVerHistorial: _abrirHistorial,
+          ),
           EntregasScreen(api: widget.api, controlador: widget.entregas),
           MisEntregasScreen(controlador: widget.entregas),
           TarreoScreen(
@@ -260,6 +276,16 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
       // por sesión: si el mostrador los cambia, el camionero cobra lo nuevo.
       widget.balones.cargar();
     }
+  }
+
+  /// El historial es una pantalla aparte, no una pestaña: la PWA también lo
+  /// sirve como página propia (`entregas_historial`).
+  void _abrirHistorial() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext _) => HistorialScreen(api: widget.api),
+      ),
+    );
   }
 
   /// Confirma y cierra la sesión. El servidor es la fuente de verdad, pero si
