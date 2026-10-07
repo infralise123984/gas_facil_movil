@@ -674,6 +674,7 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 | **F2** las cuatro acciones | ✅ API y app; probado de punta a punta (tomar un pedido) |
 | Sesión persistente | ✅ `flutter_secure_storage` (Keystore), confirmada contra `/auth/perfil/` y con la cookie cifrada en el disco del teléfono |
 | **F4** `tarreo/` y `balones/` | ✅ API (13 tests) y app: el Tarreo vende contra el catálogo real, sin precios inventados |
+| **F4** revisión de fidelidad | ✅ el Tarreo quedó igual a la PWA: total fijo arriba, tres pasos numerados, botón AGREGAR con contador que aparece después, etiqueta de tipo de gas y modal de confirmación con productos, método y total |
 | **F6** `resumen-hoy/` e `historial/` | ✅ API (11 tests) y app: historial del mes con detalle por día, y el reloj del inicio ahora es el del servidor |
 | Idempotencia (`Idempotency-Key`) | ⏳ requiere una migración en el servidor (§8 del contrato) |
 
@@ -699,6 +700,7 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 - **Sin cola offline ni caché**: con el servidor caído solo se ve la última lista conocida, marcada como vieja.
 - **El detalle de un día no tiene el botón "Ver vista de hoy"** que la web muestra cuando el día es hoy: en la app se llega por la pestaña "Mis Entregas", que ya está siempre en la barra.
 - **`GET /api/v1/resumen-hoy/` no lo consume la app**: `/entregas/` ya trae esos datos y el inicio de la web no muestra números en las tarjetas. Queda para el refresco liviano del inicio.
+- **El Tarreo no ofrece "Transferencia"** aunque el API lo acepte: la web solo muestra Efectivo y Tarjeta, y la app copia la pantalla, no el modelo. Tampoco hay método preseleccionado (en la web el campo es obligatorio y empieza vacío).
 - "Editar Pedido" (venta extra) sigue siendo un aviso: el contrato todavía no tiene ese endpoint.
 - **Ninguna pantalla usa ya datos inventados**: `DatosMock` se borró con F4. `grep -r DatosMock lib/` no debe devolver nada.
 

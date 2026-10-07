@@ -49,6 +49,7 @@ class TipoBalon {
     required this.nombre,
     required this.pesoNetoKg,
     required this.precioDomicilio,
+    this.tipoGas = '',
   });
 
   factory TipoBalon.desdeJson(Map<String, dynamic> json) => TipoBalon(
@@ -56,6 +57,7 @@ class TipoBalon {
     nombre: json['nombre'] as String,
     pesoNetoKg: json['peso_neto_gas'] as int,
     precioDomicilio: json['precio_domicilio'] as int,
+    tipoGas: json['tipo_gas'] as String? ?? '',
   );
 
   final int id;
@@ -64,6 +66,17 @@ class TipoBalon {
 
   /// Precio para pedidos telefónicos, tarreo y entregas a domicilio.
   final int precioDomicilio;
+
+  /// `normal`, `catalitico` o `aluminio` (`TipoBalon.tipo_gas` en la web).
+  final String tipoGas;
+
+  /// Etiqueta que el tarreo de la web muestra bajo el nombre, o `null` si es un
+  /// balón normal.
+  String? get etiquetaTipo => switch (tipoGas) {
+    'catalitico' => 'CATALÍTICO',
+    'aluminio' => 'ALUMINIO',
+    _ => null,
+  };
 }
 
 /// Línea de un pedido, tal como la entrega `serializar_linea`.
