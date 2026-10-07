@@ -39,14 +39,24 @@ enum OrigenPedido {
   };
 }
 
+/// Balón del catálogo vigente, tal como lo entrega `serializar_balon` (§7.5).
+///
+/// Solo trae el precio de domicilio, que es el que rige para el tarreo. El
+/// precio de compra **no** viaja al teléfono: con él se reconstruye el margen.
 class TipoBalon {
   const TipoBalon({
     required this.id,
     required this.nombre,
     required this.pesoNetoKg,
     required this.precioDomicilio,
-    required this.precioLocal,
   });
+
+  factory TipoBalon.desdeJson(Map<String, dynamic> json) => TipoBalon(
+    id: json['id'] as int,
+    nombre: json['nombre'] as String,
+    pesoNetoKg: json['peso_neto_gas'] as int,
+    precioDomicilio: json['precio_domicilio'] as int,
+  );
 
   final int id;
   final String nombre;
@@ -54,9 +64,6 @@ class TipoBalon {
 
   /// Precio para pedidos telefónicos, tarreo y entregas a domicilio.
   final int precioDomicilio;
-
-  /// Precio en bodega o venta directa.
-  final int precioLocal;
 }
 
 /// Línea de un pedido, tal como la entrega `serializar_linea`.

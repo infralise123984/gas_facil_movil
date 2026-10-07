@@ -54,6 +54,8 @@ class ApiCliente {
   static const String rutaLogout = '/api/v1/auth/logout/';
   static const String rutaPerfil = '/api/v1/auth/perfil/';
   static const String rutaEntregas = '/api/v1/entregas/';
+  static const String rutaTarreo = '/api/v1/tarreo/';
+  static const String rutaBalones = '/api/v1/balones/';
 
   /// Cookie de sesión de Django: es la credencial que se guarda.
   static const String _cookieSesion = 'sessionid';
@@ -151,6 +153,46 @@ class ApiCliente {
       'POST',
       '$rutaEntregas$pedidoId/$accion/',
       cuerpo: const <String, Object?>{},
+      exigeCsrf: true,
+    );
+    final Map<String, dynamic> datos = sobre['data'] as Map<String, dynamic>;
+    return _mapear(() => Pedido.desdeJson(datos['pedido'] as Map<String, dynamic>));
+  }
+
+  /// Catálogo vigente de balones (§7.5).
+  ///
+  /// Es la fuente de los precios del tarreo: la app los muestra y **no** los
+  /// manda al servidor, que vuelve a calcular el total por su cuenta.
+  Future<List<TipoBalon>> listarBalones() async {
+    final Map<String, dynamic> sobre = await _enviar('GET', rutaBalones);
+    return _mapear(
+      () => (sobre['data'] as List<dynamic>)
+          .map((dynamic balon) => TipoBalon.desdeJson(balon as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+
+  /// Venta en la calle (§7.4). Devuelve el pedido ya creado y entregado.
+  ///
+  /// Solo viajan balón y cantidad: el precio y los totales los pone el
+  /// servidor, para que el teléfono no pueda vender a un precio inventado. Una
+  /// dirección vacía queda con la que define el contrato.
+  Future<Pedido> registrarVentaTarreo({
+    required Map<int, int> cantidades,
+    required String metodoPago,
+    String direccion = '',
+  }) async {
+    final Map<String, dynamic> sobre = await _enviar(
+      'POST',
+      rutaTarreo,
+      cuerpo: <String, Object?>{
+        'metodo_pago': metodoPago,
+        'direccion_entrega': direccion,
+        'lineas': <Map<String, Object?>>[
+          for (final MapEntry<int, int> linea in cantidades.entries)
+            <String, Object?>{'balon_id': linea.key, 'cantidad': linea.value},
+        ],
+      },
       exigeCsrf: true,
     );
     final Map<String, dynamic> datos = sobre['data'] as Map<String, dynamic>;

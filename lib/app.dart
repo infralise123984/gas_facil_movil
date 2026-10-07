@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'core/config/api_config.dart';
 import 'core/error/error_api.dart';
 import 'data/api_cliente.dart';
+import 'data/controlador_balones.dart';
 import 'data/controlador_entregas.dart';
 import 'models/usuario.dart';
 import 'screens/entregas_screen.dart';
@@ -35,6 +36,11 @@ class _AppGasFacilState extends State<AppGasFacil> {
   /// leen de acá, así no se pisan ni quedan una más vieja que la otra.
   late final ControladorEntregas _entregas = ControladorEntregas(api: _api);
 
+  /// Catálogo de balones del tarreo. Se pide al abrir esa pestaña y no al
+  /// arrancar, porque la mayoría de las sesiones no pasa por la venta en la
+  /// calle.
+  late final ControladorBalones _balones = ControladorBalones(api: _api);
+
   Usuario? _usuario;
   bool _comprobandoSesion = true;
 
@@ -52,6 +58,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
   void dispose() {
     _api.cerrar();
     _entregas.dispose();
+    _balones.dispose();
     super.dispose();
   }
 
@@ -136,6 +143,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
     return PantallaCamionero(
       api: _api,
       entregas: _entregas,
+      balones: _balones,
       usuario: usuario,
       onSesionCerrada: _cerrarSesion,
     );
@@ -167,12 +175,14 @@ class PantallaCamionero extends StatefulWidget {
     super.key,
     required this.api,
     required this.entregas,
+    required this.balones,
     required this.usuario,
     required this.onSesionCerrada,
   });
 
   final ApiCliente api;
   final ControladorEntregas entregas;
+  final ControladorBalones balones;
   final Usuario usuario;
   final VoidCallback onSesionCerrada;
 
@@ -226,7 +236,11 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
           InicioScreen(onIrAPestana: _cambiarPestana, nombreUsuario: widget.usuario.nombre),
           EntregasScreen(api: widget.api, controlador: widget.entregas),
           MisEntregasScreen(controlador: widget.entregas),
-          const TarreoScreen(),
+          TarreoScreen(
+            api: widget.api,
+            balones: widget.balones,
+            entregas: widget.entregas,
+          ),
         ],
       ),
       bottomNavigationBar: BarraNavegacionCamionero(indice: _indice, onCambiar: _cambiarPestana),
@@ -240,6 +254,11 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
     // volver a una de ellas se vería la lista de la última vez que se cargó.
     if (nuevoIndice == 1 || nuevoIndice == 2) {
       widget.entregas.cargar();
+    }
+    if (nuevoIndice == 3) {
+      // Los precios del tarreo también se actualizan al entrar, no solo una vez
+      // por sesión: si el mostrador los cambia, el camionero cobra lo nuevo.
+      widget.balones.cargar();
     }
   }
 
