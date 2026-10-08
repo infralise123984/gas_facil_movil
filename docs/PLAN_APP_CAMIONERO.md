@@ -308,10 +308,23 @@ Regla explícita: **sin alertas automáticas ni notificaciones por inactividad.*
 
 Lo que se decida en contra de estas medidas debe quedar escrito en este documento antes de programar.
 
-**Estado:** no se implementa en la primera entrega. Se diseña ahora porque condiciona tres decisiones de la app:
-- el permiso de ubicación en background (conviene pedirlo junto al resto de permisos),
-- la app debe poder ejecutar trabajo en background (afecta la arquitectura completa, no solo esta feature),
-- el volumen de llamadas al backend crece: medirlo temprano.
+**Estado (2026-10-07): acordado y en implementación.** El dueño confirmó la aprobación, así que F9 se construye y se enciende.
+
+**Lo acordado, escrito acá como exige esta misma sección:**
+
+| Punto | Decisión |
+|---|---|
+| **D-6** base legal | **Aprobada** por el dueño con la jefa |
+| **D-14** teléfono | **De la empresa.** Equipo entregado con uso acordado, no el teléfono personal del trabajador |
+| **D-15** jornada | **Todos los días, 08:00 a 20:00**, configurable en el servidor (no en la app) |
+| Retención | 24 h, como ya estaba definido |
+
+**Desviación consciente:** reportar *toda la jornada* es menos restrictivo que la minimización propuesta (reportar solo mientras hay un pedido `en_ruta`). Se acepta con estas mitigaciones: ventana de 24 h sin histórico, teléfono de la empresa, notificación permanente "Compartiendo ubicación" a la vista del camionero, acceso solo `jefe`/`admin` y cada consulta auditada. Endurecerlo después es un cambio de una línea en el cliente.
+
+Y los tres puntos que condicionaban la app quedan resueltos así:
+- el permiso de ubicación en background se pide **junto con el de notificaciones**, una sola vez y explicado,
+- el trabajo en background usa **un solo mecanismo**: `WorkManager` para refrescar pedidos y un *foreground service* para el GPS,
+- el consumo del backend se mide desde el primer día: con 1 muestra/min y 12 h de jornada son ~720 filas por camionero dentro de la ventana de 24 h.
 
 **MVP del MVP, si se aprueba:** reportar solo mientras hay un pedido `en_ruta`, y mostrar en el panel web únicamente la "última posición conocida", sin histórico.
 
@@ -397,22 +410,22 @@ lib/
 | D-3 | **`WorkManager` 15 min + notificación local**; FCM solo como *opt-in* si el piloto lo justifica | Con 2 camioneros que no compiten por el pool, la latencia no cuesta ventas (§5) |
 | D-4 | **Reusar el login/2FA actual** con endpoints JSON aditivos | No se toca `auth.py`; cero dependencias nuevas; `django-axes` sigue protegiendo el login |
 | D-5 | El camionero **no** hace su sobre/rendición desde la app | La web ya lo resuelve con bodeguero/jefe; agregarlo a la app sería una feature nueva para el camionero, fuera del encuadre de §0 |
+| D-6 | **Base legal del GPS: aprobada** por el dueño con la jefa (2026-10-07) | Desbloquea F9. Las mitigaciones aceptadas quedaron escritas en §6 |
 | D-7 | **Sin evidencia fotográfica** | Nada que almacenar ni subir |
 | D-8 | **Un teléfono por camionero** | Sesión y caché propias de cada uno; sin mezcla de datos ni logout compartido. Permite sesión de larga duración |
 | D-9 | Se incluye `venta_extra` (agregar productos a un pedido en ruta) | La función ya existe en la web: se expone, no se inventa |
 | D-10 | La app **reutiliza** los servicios Django; nada de lógica duplicada | El endpoint es transporte + validación |
+| D-14 | **Teléfono de la empresa** | Uso acordado de un equipo entregado: mejor posición que rastrear un teléfono personal |
+| D-15 | **Jornada: todos los días 08:00–20:00**, configurable en el servidor | La app reporta solo dentro de esa ventana y se apaga fuera |
 | D-16 | **Repo separado** para la app Flutter; los cambios de API van en el repo de `gas_project` | Dos repos y dos deploys: cada cambio de API se despliega por separado, y `mobile/` se versiona como proyecto propio |
 
 ### Abiertas
 
 | ID | Decisión | Por qué importa |
 |---|---|---|
-| D-6 | **En investigación (dueño + jefa): base legal del seguimiento GPS** | La Ley 21.719 entra en vigencia en diciembre de 2026; sin acuerdo no se programa. La ventana de 24 h (§6) juega a favor |
-| D-15 | **Qué se considera "jornada"** para reportar ubicación | Es el límite que hace legal el control: botón explícito de inicio/término, o regla implícita ligada a la actividad del día (§6)
 | D-11 | Custodia y respaldo de la **clave de firma del APK** (`keystore.jks`) | Si se pierde, la app instalada no se puede actualizar nunca más |
 | D-12 | ¿Telemetría de fallos (Sentry/Crashlytics) o nada? | Sin ella, un error en ruta se diagnostica a ciegas; agrega un tercero |
 | D-13 | Cómo se avisa al camionero de una versión nueva | El sideload no se auto-actualiza |
-| D-14 | ¿El teléfono es **de la empresa** o del camionero? | Cambia la posición legal del seguimiento y define soporte: quién paga los datos, qué pasa si se pierde o se rompe |
 
 ---
 
@@ -451,7 +464,7 @@ lib/
 | **F6** | Historial diario/mensual + estadísticas | Paridad con `camionero_historial` |
 | **F7** | APK firmado, servido por Django (`GET /apk/...`) + `GET /api/v1/version/` + manual de instalación | Un camionero instalado y operando desde el APK |
 | **F8** | Piloto real + telemetría (si D-12 se aprueba) | Una semana en ruta sin incidentes de dinero |
-| **F9** | *(solo si D-6 se aprueba)* Envío de ubicación (ventana 24 h) + mapa e indicador trabajando/detenido en el panel del jefe | El jefe ve la posición de cada camión y distingue "detenido hace 1 h con pedidos en ruta" de "al día" |
+| **F9** | **D-6 aprobado el 2026-10-07.** Envío de ubicación (ventana 24 h, jornada 08:00–20:00 configurable) + mapa e indicador trabajando/detenido en el panel del jefe | El jefe ve la posición de cada camión y distingue "detenido hace 1 h con pedidos en ruta" de "al día" |
 
 **Estimación gruesa:** F0–F4 ≈ 60 % del esfuerzo. F3 (offline) es el mayor riesgo técnico; F9 depende de una decisión legal, no técnica.
 
@@ -504,12 +517,9 @@ lib/
 
 | ID | Tema | Cuándo decidirlo |
 |---|---|---|
-| D-6 | Base legal del seguimiento GPS | Investigación con la jefa; bloquea F9 |
-| D-11 | Custodia y respaldo del `keystore.jks` | **Antes de la primera instalación** |
+| D-11 | Custodia y respaldo del `keystore.jks` | **Antes de la primera instalación fuera de este PC** (la prueba va en otro teléfono de la empresa) |
 | D-12 | Telemetría de fallos (Sentry/Crashlytics) | Antes del piloto (F8) |
 | D-13 | Cómo se avisa de una versión nueva | Con `GET /api/v1/version/` (F7) |
-| D-14 | ¿Teléfono de la empresa o del camionero? | Antes de comprar equipos |
-| D-15 | Qué se considera "jornada" | Solo bloquea F9 |
 
 ### 14.4 Dudas reales que quedan
 
