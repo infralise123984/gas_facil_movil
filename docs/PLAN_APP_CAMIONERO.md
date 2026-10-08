@@ -707,6 +707,8 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 
 ### 18.3 Cómo depurar en el teléfono (sin pedir capturas)
 
+> El procedimiento completo —emparejamiento por wifi, `adb reverse`, espejo con scrcpy y los problemas ya vistos— está en **`docs/DEPURACION_TELEFONO.md`**.
+
 El teléfono responde a `adb`, así que el error se inspecciona directo:
 
 | Necesidad | Comando |
