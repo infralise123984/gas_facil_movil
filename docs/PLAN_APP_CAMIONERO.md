@@ -459,7 +459,7 @@ lib/
 | **F1** | Esqueleto Flutter (capas, Riverpod, Dio, router) + login (usuario y contraseña; sin 2FA) + lista de entregas (solo lectura) con la misma interfaz de la PWA | El camionero ve pendientes / en ruta / entregados igual que en el navegador |
 | **F2** | Acciones: tomar, entregar, cancelar, devolver + `Idempotency-Key` en el servidor | Replican reglas, historial y auditoría de la web |
 | **F3** | Offline-first: Drift + outbox + `SyncEngine` + indicador de sync | Marcar entregado sin señal y sincronizar después sin duplicar |
-| **F4** | Tarreo + `venta_extra` + catálogo y precios | Venta registrada con montos validados por el servidor |
+| **F4** | Tarreo + catálogo y precios (**cerrado**) · `venta_extra`/"Editar Pedido" **especificado sin implementar** (`gas_project/docs/API_MOVIL.md` §7.6) | Venta registrada con montos validados por el servidor |
 | **F5** | Notificaciones: `WorkManager` (15 min) + notificación local + refresco al volver a primer plano | El camionero se entera del pedido con la app cerrada |
 | **F6** | Historial diario/mensual + estadísticas | Paridad con `camionero_historial` |
 | **F7** | APK firmado, servido por Django (`GET /apk/...`) + `GET /api/v1/version/` + manual de instalación | Un camionero instalado y operando desde el APK |
@@ -712,7 +712,7 @@ Aun con todo instalado, el emulador **no reproduce lo que más importa en esta a
 - **`GET /api/v1/resumen-hoy/` no lo consume la app**: `/entregas/` ya trae esos datos y el inicio de la web no muestra números en las tarjetas. Queda para el refresco liviano del inicio.
 - **Después de guardar, el Tarreo vuelve al inicio**; la web redirige a "Mis Entregas" (`entregas_mias`). Decisión del dueño: el camionero termina la venta y vuelve al menú.
 - **El Tarreo no ofrece "Transferencia"** aunque el API lo acepte: la web solo muestra Efectivo y Tarjeta, y la app copia la pantalla, no el modelo. Tampoco hay método preseleccionado (en la web el campo es obligatorio y empieza vacío).
-- "Editar Pedido" (venta extra) sigue siendo un aviso: el contrato todavía no tiene ese endpoint.
+- **"Editar Pedido"** sigue siendo un aviso. El endpoint no existe todavía, así que quedó **especificado como traspaso para otro agente** en `gas_project/docs/API_MOVIL.md` §7.6: reglas verificadas contra la vista web, pruebas mínimas y las 3 decisiones que faltan que tome el dueño.
 - **Ninguna pantalla usa ya datos inventados**: `DatosMock` se borró con F4. `grep -r DatosMock lib/` no debe devolver nada.
 
 ### 18.3 Cómo depurar en el teléfono (sin pedir capturas)
