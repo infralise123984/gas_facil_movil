@@ -42,11 +42,11 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="pedidos" />
-        <!-- FID, no el token legacy: el backend apunta con `fid` (docs/API_MOVIL.md
-             §7.7). Firebase pide habilitar los Installation IDs por configuración. -->
-        <meta-data
-            android:name="firebase_messaging_installation_id_enabled"
-            android:value="true" />
+        <!-- NO agregar `firebase_messaging_installation_id_enabled`: ese meta-data
+             **deshabilita** la API del registration token y `getToken()` lanza
+             IllegalStateException: API disabled. El plugin de Flutter todavía no
+             expone los Installation IDs, así que el token es el único camino
+             (ver mockups/api/dispositivos.py y docs/API_MOVIL.md §7.7). -->
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
