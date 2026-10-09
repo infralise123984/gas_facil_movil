@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- El API vive en un servidor remoto: sin esto la app no tiene red. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ y el aviso de pedido nuevo: sin este permiso el sistema
+         descarta la notificación sin decir nada. Se pide tras el login. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Kim Gas"
         android:name="${applicationName}"
@@ -32,6 +35,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- El servidor manda `channel_id: pedidos` (CANAL_ANDROID de
+             mockups/push_notifications_movil.py). Si este valor no coincidiera,
+             Android usaría el canal genérico del sistema y el aviso perdería
+             importancia y sonido. La app crea el canal al arrancar. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="pedidos" />
+        <!-- FID, no el token legacy: el backend apunta con `fid` (docs/API_MOVIL.md
+             §7.7). Firebase pide habilitar los Installation IDs por configuración. -->
+        <meta-data
+            android:name="firebase_messaging_installation_id_enabled"
+            android:value="true" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "106220060747",
+    "project_id": "kimgas-notificaciones",
+    "storage_bucket": "kimgas-notificaciones.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:106220060747:android:0b36e1e80c3099b6eccdce",
+        "android_client_info": {
+          "package_name": "cl.kimgas.gas_facil_movil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZgS4xxwj6JqGgv5FpGD3DO_AUcAHrgjc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

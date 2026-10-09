@@ -192,9 +192,7 @@ class Pedido {
   /// línea, así que no hace falta otra consulta.
   String get resumenProductos => lineas.isEmpty
       ? '—'
-      : lineas
-            .map((LineaPedido linea) => '${linea.cantidad}×${linea.pesoNetoGas}kg')
-            .join(' + ');
+      : lineas.map((LineaPedido linea) => '${linea.cantidad}×${linea.pesoNetoGas}kg').join(' + ');
 }
 
 DateTime _fechaDesde(Object? valor) {
@@ -233,9 +231,7 @@ String formatearFecha(DateTime fecha) =>
     '${_dosDigitos(fecha.day)}/${_dosDigitos(fecha.month)}/${fecha.year}';
 
 /// Hora en el formato corto que usa la PWA: `14:35`.
-String formatearHora(DateTime fecha) =>
-    '${_dosDigitos(fecha.hour)}:${_dosDigitos(fecha.minute)}';
+String formatearHora(DateTime fecha) => '${_dosDigitos(fecha.hour)}:${_dosDigitos(fecha.minute)}';
 
 /// Fecha y hora en el formato corto que usa la PWA: `06/10/2026 14:35`.
-String formatearFechaHora(DateTime fecha) =>
-    '${formatearFecha(fecha)} ${formatearHora(fecha)}';
+String formatearFechaHora(DateTime fecha) => '${formatearFecha(fecha)} ${formatearHora(fecha)}';

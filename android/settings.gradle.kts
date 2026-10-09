@@ -21,6 +21,10 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "9.1.0" apply false
     id("org.jetbrains.kotlin.android") version "2.4.0" apply false
+    // Lee google-services.json (android/app/) y genera los recursos que necesita
+    // el SDK de Firebase. Solo el plugin: el BoM y firebase-messaging los trae
+    // el plugin de Flutter firebase_messaging, declarados a mano se pisan.
+    id("com.google.gms.google-services") version "4.5.0" apply false
 }
 
 include(":app")

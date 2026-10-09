@@ -55,9 +55,7 @@ class _DetalleDiaScreenState extends State<DetalleDiaScreen> {
     final DetalleDia? dia = _dia;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(dia == null ? 'Detalle del día' : formatearFecha(dia.fecha)),
-      ),
+      appBar: AppBar(title: Text(dia == null ? 'Detalle del día' : formatearFecha(dia.fecha))),
       body: RefreshIndicator(
         onRefresh: _cargar,
         child: ListView(
@@ -185,17 +183,10 @@ class _EtiquetaTotal extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(30),
-      ),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(30)),
       child: Text(
         texto,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
   }
@@ -213,10 +204,7 @@ class _EtiquetaOrigen extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: fondo,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(20)),
       child: Text(
         texto,
         style: TextStyle(

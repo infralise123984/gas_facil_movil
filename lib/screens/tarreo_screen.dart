@@ -84,8 +84,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
   /// Balones que entraron en la venta, en el orden del catálogo.
   List<MapEntry<TipoBalon, int>> get _lineas => <MapEntry<TipoBalon, int>>[
     for (final TipoBalon balon in widget.balones.balones)
-      if ((_cantidades[balon.id] ?? 0) > 0)
-        MapEntry<TipoBalon, int>(balon, _cantidades[balon.id]!),
+      if ((_cantidades[balon.id] ?? 0) > 0) MapEntry<TipoBalon, int>(balon, _cantidades[balon.id]!),
   ];
 
   void _cambiarCantidad(TipoBalon balon, int delta) {
@@ -116,9 +115,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
                 children: <Widget>[
                   Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: MedidasApp.anchoMaximoContenido,
-                      ),
+                      constraints: const BoxConstraints(maxWidth: MedidasApp.anchoMaximoContenido),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: _pasos(),
@@ -151,16 +148,9 @@ class _TarreoScreenState extends State<TarreoScreen> {
         children: <Widget>[
           Text(
             formatearClp(_total),
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          const Text(
-            'Total venta en curso',
-            style: TextStyle(fontSize: 13, color: Colors.white70),
-          ),
+          const Text('Total venta en curso', style: TextStyle(fontSize: 13, color: Colors.white70)),
         ],
       ),
     );
@@ -173,26 +163,18 @@ class _TarreoScreenState extends State<TarreoScreen> {
       return const <Widget>[PantallaCargando(mensaje: 'Cargando precios…')];
     }
     if (controlador.error != null && controlador.balones.isEmpty) {
-      return <Widget>[
-        PantallaError(mensaje: controlador.error!, onReintentar: controlador.cargar),
-      ];
+      return <Widget>[PantallaError(mensaje: controlador.error!, onReintentar: controlador.cargar)];
     }
     if (controlador.balones.isEmpty) {
       return const <Widget>[
-        EstadoVacio(
-          titulo: 'Sin balones',
-          mensaje: 'No hay balones disponibles para venta.',
-        ),
+        EstadoVacio(titulo: 'Sin balones', mensaje: 'No hay balones disponibles para venta.'),
       ];
     }
 
     final String? fallo = controlador.error;
     return <Widget>[
       if (fallo != null)
-        AvisoInfo(
-          texto: 'No se pudieron actualizar los precios: $fallo',
-          icono: Icons.wifi_off,
-        ),
+        AvisoInfo(texto: 'No se pudieron actualizar los precios: $fallo', icono: Icons.wifi_off),
       _pasoPago(),
       _pasoBalones(controlador.balones),
       _pasoDireccion(),
@@ -251,9 +233,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ),
-      hijos: <Widget>[
-        for (final TipoBalon balon in balones) _tarjetaBalon(balon),
-      ],
+      hijos: <Widget>[for (final TipoBalon balon in balones) _tarjetaBalon(balon)],
     );
   }
 
@@ -264,9 +244,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
       titulo: 'Dirección (opcional)',
       colorNumero: ColoresApp.secundario,
       colorTitulo: ColoresApp.secundario,
-      fondo: const LinearGradient(
-        colors: <Color>[Color(0xFFF8F9FA), Color(0xFFF8F9FA)],
-      ),
+      fondo: const LinearGradient(colors: <Color>[Color(0xFFF8F9FA), Color(0xFFF8F9FA)]),
       hijos: <Widget>[
         TextField(
           controller: _direccion,
@@ -324,10 +302,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
                   children: <Widget>[
                     Text(
                       balon.nombre,
-                      style: const TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
                     ),
                     if (etiqueta != null) ...<Widget>[
                       const SizedBox(height: 4),
@@ -524,10 +499,7 @@ class _TarreoScreenState extends State<TarreoScreen> {
           FilledButton(
             onPressed: () => Navigator.of(contexto).pop(true),
             style: FilledButton.styleFrom(backgroundColor: ColoresApp.exito),
-            child: const Text(
-              'Sí, guardar venta',
-              style: TextStyle(fontSize: 16),
-            ),
+            child: const Text('Sí, guardar venta', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),
@@ -567,10 +539,7 @@ class _Seccion extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: fondo,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(gradient: fondo, borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -595,11 +564,7 @@ class _Seccion extends StatelessWidget {
               Expanded(
                 child: Text(
                   titulo,
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    color: colorTitulo,
-                  ),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: colorTitulo),
                 ),
               ),
             ],
@@ -653,11 +618,7 @@ class _BotonPago extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   etiqueta,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: texto,
-                  ),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: texto),
                 ),
               ],
             ),
@@ -722,11 +683,7 @@ class _EtiquetaBalon extends StatelessWidget {
       ),
       child: Text(
         etiqueta,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
   }

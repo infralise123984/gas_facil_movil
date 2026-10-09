@@ -1,7 +1,12 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'core/config/api_config.dart';
 import 'core/error/error_api.dart';
+import 'core/notificaciones/registro_dispositivo.dart';
+import 'core/notificaciones/servicio_notificaciones.dart';
 import 'core/time/reloj_servidor.dart';
 import 'data/api_cliente.dart';
 import 'data/controlador_balones.dart';
@@ -35,10 +40,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
   final RelojServidor _reloj = RelojServidor();
 
   /// Un solo cliente para toda la app: es quien guarda las cookies de sesión.
-  late final ApiCliente _api = ApiCliente(
-    config: ApiConfig.desdeEntorno(),
-    reloj: _reloj,
-  );
+  late final ApiCliente _api = ApiCliente(config: ApiConfig.desdeEntorno(), reloj: _reloj);
 
   /// Un solo dueño de los datos del panel: las dos pantallas que los muestran
   /// leen de acá, así no se pisan ni quedan una más vieja que la otra.
@@ -48,6 +50,20 @@ class _AppGasFacilState extends State<AppGasFacil> {
   /// arrancar, porque la mayoría de las sesiones no pasa por la venta en la
   /// calle.
   late final ControladorBalones _balones = ControladorBalones(api: _api);
+
+  /// Prepara el canal y el permiso de notificaciones. No muestra notificaciones:
+  /// el aviso de pedido nuevo lo pinta Android desde el mensaje de FCM.
+  late final ServicioNotificaciones _notificaciones = ServicioNotificacionesLocal();
+
+  /// Mantiene el identificador de este teléfono registrado en el servidor.
+  late final RegistroDispositivo _dispositivo = RegistroDispositivo(
+    api: _api,
+    versionApp: _versionApp,
+  );
+
+  /// Versión que viaja al servidor con el registro del teléfono, para saber desde
+  /// qué build se registró un equipo. Mantener en sync con `pubspec.yaml`.
+  static const String _versionApp = '0.1.0';
 
   Usuario? _usuario;
   bool _comprobandoSesion = true;
@@ -59,11 +75,13 @@ class _AppGasFacilState extends State<AppGasFacil> {
   @override
   void initState() {
     super.initState();
+    _escucharMensajesDeFirebase();
     _recuperarSesion();
   }
 
   @override
   void dispose() {
+    unawaited(_dispositivo.detener());
     _api.cerrar();
     _entregas.dispose();
     _balones.dispose();
@@ -98,6 +116,9 @@ class _AppGasFacilState extends State<AppGasFacil> {
           _comprobandoSesion = false;
         });
       }
+      // Los avisos se preparan después de pintar: un permiso lento no puede
+      // retrasar el arranque de la app.
+      unawaited(_prepararNotificaciones());
     } on ErrorApi catch (error) {
       // Sesión vencida o rechazada: se descarta y se pide login de nuevo.
       if (error.codigo != CodigosError.sinConexion) {
@@ -106,9 +127,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
       if (mounted) {
         setState(() {
           _comprobandoSesion = false;
-          _falloDeArranque = error.codigo == CodigosError.sinConexion
-              ? error.mensaje
-              : null;
+          _falloDeArranque = error.codigo == CodigosError.sinConexion ? error.mensaje : null;
         });
       }
     }
@@ -137,9 +156,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
     if (fallo != null) {
       return Scaffold(
         body: CuerpoPantalla(
-          children: <Widget>[
-            PantallaError(mensaje: fallo, onReintentar: _reintentarArranque),
-          ],
+          children: <Widget>[PantallaError(mensaje: fallo, onReintentar: _reintentarArranque)],
         ),
       );
     }
@@ -166,13 +183,61 @@ class _AppGasFacilState extends State<AppGasFacil> {
     _recuperarSesion();
   }
 
-  void _iniciarSesion(Usuario usuario) => setState(() => _usuario = usuario);
+  void _iniciarSesion(Usuario usuario) {
+    setState(() => _usuario = usuario);
+    unawaited(_prepararNotificaciones());
+  }
 
-  void _cerrarSesion() {
+  /// Cierra la sesión en el servidor y en el teléfono.
+  ///
+  /// El servidor es la fuente de verdad, pero si no responde se cierra igual: el
+  /// camionero no puede quedar atrapado dentro de la app.
+  Future<void> _cerrarSesion() async {
+    // El teléfono se da de baja ANTES del logout: después el API responde 401 y
+    // este teléfono seguiría recibiendo avisos de un camionero que ya salió.
+    await _dispositivo.darDeBaja();
+
+    try {
+      await _api.cerrarSesion();
+    } on ErrorApi catch (error) {
+      debugPrint('LOGOUT_API_FALLIDO | ${error.codigo} | ${error.detalle ?? ''}');
+    }
+
     // Los pedidos son del camionero que se va: no pueden quedar a la vista del
     // siguiente que use el teléfono.
     _entregas.limpiar();
-    setState(() => _usuario = null);
+    if (mounted) {
+      setState(() => _usuario = null);
+    }
+  }
+
+  /// Crea el canal, pide el permiso y registra el FID de este teléfono.
+  ///
+  /// Sin canal, Android no tiene dónde poner el aviso; sin permiso, lo descarta
+  /// en silencio. El FID se registra igual cuando el permiso se niega: si el
+  /// camionero lo habilita después, el teléfono ya está del otro lado sin
+  /// reinstalar nada.
+  Future<void> _prepararNotificaciones() async {
+    await _notificaciones.preparar();
+    await _dispositivo.iniciar();
+  }
+
+  /// Con la app abierta, FCM entrega el mensaje sin pintar nada.
+  ///
+  /// No hace falta mostrarlo: la lista se recarga y el pedido aparece solo. Así
+  /// el camionero no recibe un aviso duplicado sobre una pantalla que ya está
+  /// mirando.
+  void _escucharMensajesDeFirebase() {
+    try {
+      FirebaseMessaging.onMessage.listen((RemoteMessage mensaje) {
+        if (mensaje.data['tipo'] == 'pedido_nuevo') {
+          _entregas.cargar();
+        }
+      });
+    } catch (error) {
+      // Firebase no está disponible: la app sigue igual, sin avisos.
+      debugPrint('FCM_ESCUCHA_FALLIDA | $error');
+    }
   }
 }
 
@@ -195,7 +260,10 @@ class PantallaCamionero extends StatefulWidget {
   final ControladorBalones balones;
   final RelojServidor reloj;
   final Usuario usuario;
-  final VoidCallback onSesionCerrada;
+
+  /// Cierra la sesión: la orquesta el padre, que es quien conoce el servidor, el
+  /// almacén de la credencial y el registro del teléfono.
+  final Future<void> Function() onSesionCerrada;
 
   @override
   State<PantallaCamionero> createState() => _PantallaCamioneroState();
@@ -282,16 +350,15 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
   /// El historial es una pantalla aparte, no una pestaña: la PWA también lo
   /// sirve como página propia (`entregas_historial`).
   void _abrirHistorial() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext _) => HistorialScreen(api: widget.api),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (BuildContext _) => HistorialScreen(api: widget.api)));
   }
 
-  /// Confirma y cierra la sesión. El servidor es la fuente de verdad, pero si
-  /// no responde se cierra igual en el teléfono: el camionero no puede quedar
-  /// atrapado dentro de la app.
+  /// Confirma y delega el cierre de sesión en el padre.
+  ///
+  /// Acá no se llama al API: dar de baja el teléfono tiene que ocurrir **antes**
+  /// del logout, y ese orden lo garantiza quien conoce las dos cosas.
   Future<void> _mostrarPerfil() async {
     final bool salir = await confirmarAccion(
       context,
@@ -306,14 +373,8 @@ class _PantallaCamioneroState extends State<PantallaCamionero> with WidgetsBindi
       return;
     }
 
-    try {
-      await widget.api.cerrarSesion();
-    } on ErrorApi catch (error) {
-      debugPrint('LOGOUT_API_FALLIDO | ${error.codigo} | ${error.detalle ?? ''}');
-    }
-    if (!mounted) {
-      return;
-    }
-    widget.onSesionCerrada();
+    // El cierre lo hace el padre: acá solo se confirma, porque dar de baja el
+    // teléfono tiene que ocurrir antes del logout.
+    await widget.onSesionCerrada();
   }
 }

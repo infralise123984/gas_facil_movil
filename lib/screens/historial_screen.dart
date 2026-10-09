@@ -100,10 +100,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
     return <Widget>[
       // Si falló la recarga, se sigue viendo el mes que ya estaba, avisado.
       if (fallo != null)
-        AvisoInfo(
-          texto: 'No se pudo actualizar el historial: $fallo',
-          icono: Icons.wifi_off,
-        ),
+        AvisoInfo(texto: 'No se pudo actualizar el historial: $fallo', icono: Icons.wifi_off),
       _selectorDeMes(mes),
       _totalesDelMes(mes),
       const SizedBox(height: 14),
@@ -160,11 +157,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                 valor: '${mes.kilos}',
                 color: ColoresApp.primario,
               ),
-              _ColumnaTotal(
-                etiqueta: 'Ventas',
-                valor: '${mes.entregas}',
-                color: ColoresApp.exito,
-              ),
+              _ColumnaTotal(etiqueta: 'Ventas', valor: '${mes.entregas}', color: ColoresApp.exito),
               _ColumnaTotal(
                 etiqueta: 'Monto',
                 valor: formatearClp(mes.monto),
@@ -200,10 +193,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
             ),
             if (dia.esHoy) const _ChipHoy(),
             const Spacer(),
-            const Text(
-              'Sin ventas',
-              style: TextStyle(fontSize: 14, color: ColoresApp.secundario),
-            ),
+            const Text('Sin ventas', style: TextStyle(fontSize: 14, color: ColoresApp.secundario)),
           ],
         ),
       );
@@ -235,10 +225,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                       children: <Widget>[
                         Text(
                           formatearFecha(dia.fecha),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         if (hoy) const _ChipHoy(),
                       ],
@@ -246,10 +233,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                     const SizedBox(height: 2),
                     Text(
                       _detalleDiaTexto(dia),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: ColoresApp.secundario,
-                      ),
+                      style: const TextStyle(fontSize: 13, color: ColoresApp.secundario),
                     ),
                   ],
                 ),
@@ -299,21 +283,14 @@ class _HistorialScreenState extends State<HistorialScreen> {
   Future<void> _abrirDia(DiaHistorial dia) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext _) => DetalleDiaScreen(
-          api: widget.api,
-          fecha: dia.fechaParametro,
-        ),
+        builder: (BuildContext _) => DetalleDiaScreen(api: widget.api, fecha: dia.fechaParametro),
       ),
     );
   }
 }
 
 class _ColumnaTotal extends StatelessWidget {
-  const _ColumnaTotal({
-    required this.etiqueta,
-    required this.valor,
-    required this.color,
-  });
+  const _ColumnaTotal({required this.etiqueta, required this.valor, required this.color});
 
   final String etiqueta;
   final String valor;

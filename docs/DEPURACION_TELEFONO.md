@@ -59,6 +59,25 @@ La app apunta a `127.0.0.1:8000`, así que el puerto del Django viaja por `adb r
 
 Si se corta la conexión wifi, el `reverse` se pierde: hay que rehacerlo (igual que el `connect`).
 
+#### Camino corto
+
+Los pasos 1.2 y 1.3 están empaquetados en `C:\Users\tokyo-3\dev\conectar.ps1`: busca el dispositivo, lo reconecta por mDNS si hace falta, rehace el `reverse` y comprueba que el servidor responda.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Users\tokyo-3\dev\conectar.ps1
+```
+
+Devuelve **una sola línea**:
+
+| Salida | Significa |
+|---|---|
+| `LISTO ...` | Conectado, enlazado y el servidor responde. Se puede lanzar la app |
+| `FALTA el telefono no esta conectado` | Abrir *Depuración inalámbrica* en el teléfono y repetir |
+| `FALTA no se pudo enlazar el puerto 8000` | adb quedó trabado: `& $a kill-server` y repetir |
+| `FALTA el servidor no responde en el 8000` | Falta `python manage.py runserver` en el PC |
+
+Es idempotente: si ya estaba todo hecho, no rompe nada.
+
 ### 1.4 Compilar y ejecutar en el teléfono
 
 ```powershell
@@ -74,6 +93,7 @@ Set-Location 'C:\Users\tokyo-3\Desktop\proyecto\mobile'
 
 | Quiero | Comando |
 |---|---|
+| Dejar todo listo de una vez | `powershell -ExecutionPolicy Bypass -File C:\Users\tokyo-3\dev\conectar.ps1` |
 | Ver dispositivos | `& $a devices` |
 | Puerto de conexión | `& $a mdns services` |
 | Reconectar | `& $a connect IP:PUERTO` |

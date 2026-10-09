@@ -69,6 +69,10 @@ class ApiCliente {
   static const String rutaBalones = '/api/v1/balones/';
   static const String rutaHistorial = '/api/v1/historial/';
 
+  /// Alta del teléfono para los avisos de la app nativa (§7.7).
+  static const String rutaDispositivos = '/api/v1/dispositivos/';
+  static const String rutaDispositivosBaja = '/api/v1/dispositivos/baja/';
+
   /// Cookie de sesión de Django: es la credencial que se guarda.
   static const String _cookieSesion = 'sessionid';
 
@@ -144,6 +148,33 @@ class ApiCliente {
     return _mapear(() => Usuario.desdeJson(datos['usuario'] as Map<String, dynamic>));
   }
 
+  /// Registra este teléfono para que el servidor pueda avisarle de un pedido
+  /// nuevo (docs/API_MOVIL.md §7.7).
+  ///
+  /// Viaja el *registration token* de FCM: el plugin de Flutter todavía no
+  /// expone los Firebase Installation IDs, y la v1 acepta el token durante la
+  /// transición (deprecado a favor de `fid`). Del otro lado es idempotente, así
+  /// que llamarlo en cada arranque refresca la fila en vez de duplicarla.
+  Future<void> registrarDispositivo({required String token, required String versionApp}) async {
+    await _enviar(
+      'POST',
+      rutaDispositivos,
+      cuerpo: <String, Object?>{'token': token, 'plataforma': 'android', 'app_version': versionApp},
+      exigeCsrf: true,
+    );
+  }
+
+  /// Deja de avisarle a este teléfono. Se llama al cerrar sesión, **antes** del
+  /// logout: después el servidor responde 401.
+  Future<void> darDeBajaDispositivo({required String token}) async {
+    await _enviar(
+      'POST',
+      rutaDispositivosBaja,
+      cuerpo: <String, Object?>{'token': token},
+      exigeCsrf: true,
+    );
+  }
+
   /// Panel del camionero: pendientes disponibles, las que van en ruta y las ya
   /// entregadas hoy (§7.1).
   Future<ResumenEntregas> listarEntregas() async {
@@ -217,21 +248,15 @@ class ApiCliente {
   /// El formato lo construye el servidor a partir de lo que devolvió antes, así
   /// que la app nunca arma un mes a mano.
   Future<HistorialMes> historialMes({String? mes}) async {
-    final String ruta = (mes == null || mes.isEmpty)
-        ? rutaHistorial
-        : '$rutaHistorial?mes=$mes';
+    final String ruta = (mes == null || mes.isEmpty) ? rutaHistorial : '$rutaHistorial?mes=$mes';
     final Map<String, dynamic> sobre = await _enviar('GET', ruta);
-    return _mapear(
-      () => HistorialMes.desdeJson(sobre['data'] as Map<String, dynamic>),
-    );
+    return _mapear(() => HistorialMes.desdeJson(sobre['data'] as Map<String, dynamic>));
   }
 
   /// Detalle de las ventas de un día (§7.5). Solo trae los entregados.
   Future<DetalleDia> historialDia(String fecha) async {
     final Map<String, dynamic> sobre = await _enviar('GET', '$rutaHistorial$fecha/');
-    return _mapear(
-      () => DetalleDia.desdeJson(sobre['data'] as Map<String, dynamic>),
-    );
+    return _mapear(() => DetalleDia.desdeJson(sobre['data'] as Map<String, dynamic>));
   }
 
   Future<void> cerrarSesion() async {
