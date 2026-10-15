@@ -8,6 +8,7 @@ import '../core/config/api_config.dart';
 import '../core/error/error_api.dart';
 import '../core/storage/almacen_sesion.dart';
 import '../core/time/reloj_servidor.dart';
+import '../core/ubicacion/muestra_ubicacion.dart';
 import '../models/historial.dart';
 import '../models/pedido.dart';
 import '../models/resumen_entregas.dart';
@@ -72,6 +73,9 @@ class ApiCliente {
   /// Alta del teléfono para los avisos de la app nativa (§7.7).
   static const String rutaDispositivos = '/api/v1/dispositivos/';
   static const String rutaDispositivosBaja = '/api/v1/dispositivos/baja/';
+
+  /// Reporte de la posición del camión para el panel de flota (§7.8).
+  static const String rutaUbicacion = '/api/v1/ubicacion/';
 
   /// Cookie de sesión de Django: es la credencial que se guarda.
   static const String _cookieSesion = 'sessionid';
@@ -171,6 +175,25 @@ class ApiCliente {
       'POST',
       rutaDispositivosBaja,
       cuerpo: <String, Object?>{'token': token},
+      exigeCsrf: true,
+    );
+  }
+
+  /// Manda el lote de posiciones acumuladas durante la jornada.
+  ///
+  /// El servidor es idempotente por `(trabajador, capturado_el)`, así que
+  /// reenviar el mismo lote no duplica nada: la cola local se puede vaciar sin
+  /// miedo después de un corte de red.
+  Future<void> enviarUbicaciones(List<MuestraUbicacion> muestras) async {
+    if (muestras.isEmpty) {
+      return;
+    }
+    await _enviar(
+      'POST',
+      rutaUbicacion,
+      cuerpo: <String, Object?>{
+        'muestras': muestras.map((MuestraUbicacion muestra) => muestra.aJson()).toList(),
+      },
       exigeCsrf: true,
     );
   }

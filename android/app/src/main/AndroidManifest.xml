@@ -4,6 +4,18 @@
     <!-- Android 13+ y el aviso de pedido nuevo: sin este permiso el sistema
          descarta la notificación sin decir nada. Se pide tras el login. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Rastreo de la flota (docs/PLAN_MONITOREO_FLOTA.md): el camión reporta su
+         posición durante la jornada para que la telefonista vea quién lleva rato
+         parado. El servidor descarta todo lo que llegue fuera de 08:00-20:00.
+
+         Se pide `FINE` y **no** `ACCESS_BACKGROUND_LOCATION`: con un servicio en
+         primer plano (la notificación permanente) la app reporta aunque esté
+         cerrada, y ese es justo el permiso que Google Play audita con lupa.
+         `FOREGROUND_SERVICE_LOCATION` es obligatorio desde Android 14. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <application
         android:label="Kim Gas"
         android:name="${applicationName}"

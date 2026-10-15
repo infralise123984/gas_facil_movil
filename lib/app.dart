@@ -7,6 +7,7 @@ import 'core/config/api_config.dart';
 import 'core/error/error_api.dart';
 import 'core/notificaciones/registro_dispositivo.dart';
 import 'core/notificaciones/servicio_notificaciones.dart';
+import 'core/ubicacion/servicio_ubicacion.dart';
 import 'core/time/reloj_servidor.dart';
 import 'data/api_cliente.dart';
 import 'data/controlador_balones.dart';
@@ -61,6 +62,10 @@ class _AppGasFacilState extends State<AppGasFacil> {
     versionApp: _versionApp,
   );
 
+  /// Reporta la posición del camión durante la jornada (§7.8). Arranca junto con
+  /// la sesión y se detiene al cerrarla.
+  late final ServicioUbicacion _ubicacion = ServicioUbicacion(api: _api);
+
   /// Versión que viaja al servidor con el registro del teléfono, para saber desde
   /// qué build se registró un equipo. Mantener en sync con `pubspec.yaml`.
   static const String _versionApp = '0.1.0';
@@ -82,6 +87,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
   @override
   void dispose() {
     unawaited(_dispositivo.detener());
+    unawaited(_ubicacion.detener());
     _api.cerrar();
     _entregas.dispose();
     _balones.dispose();
@@ -116,9 +122,9 @@ class _AppGasFacilState extends State<AppGasFacil> {
           _comprobandoSesion = false;
         });
       }
-      // Los avisos se preparan después de pintar: un permiso lento no puede
-      // retrasar el arranque de la app.
-      unawaited(_prepararNotificaciones());
+      // Los servicios de fondo se preparan después de pintar: un permiso lento
+      // no puede retrasar el arranque de la app.
+      unawaited(_arrancarServiciosDeFondo());
     } on ErrorApi catch (error) {
       // Sesión vencida o rechazada: se descarta y se pide login de nuevo.
       if (error.codigo != CodigosError.sinConexion) {
@@ -185,7 +191,7 @@ class _AppGasFacilState extends State<AppGasFacil> {
 
   void _iniciarSesion(Usuario usuario) {
     setState(() => _usuario = usuario);
-    unawaited(_prepararNotificaciones());
+    unawaited(_arrancarServiciosDeFondo());
   }
 
   /// Cierra la sesión en el servidor y en el teléfono.
@@ -193,6 +199,12 @@ class _AppGasFacilState extends State<AppGasFacil> {
   /// El servidor es la fuente de verdad, pero si no responde se cierra igual: el
   /// camionero no puede quedar atrapado dentro de la app.
   Future<void> _cerrarSesion() async {
+    // El reporte de posición muere con la jornada de quien se va, y lo pendiente
+    // se descarta: son muestras de una jornada terminada y subirlas después
+    // sería reportar fuera de hora.
+    await _ubicacion.detener();
+    await _ubicacion.descartarPendientes();
+
     // El teléfono se da de baja ANTES del logout: después el API responde 401 y
     // este teléfono seguiría recibiendo avisos de un camionero que ya salió.
     await _dispositivo.darDeBaja();
@@ -211,15 +223,20 @@ class _AppGasFacilState extends State<AppGasFacil> {
     }
   }
 
-  /// Crea el canal, pide el permiso y registra el FID de este teléfono.
+  /// Deja listos los servicios que trabajan con la app cerrada: el canal de
+  /// avisos y el reporte de ubicación.
   ///
-  /// Sin canal, Android no tiene dónde poner el aviso; sin permiso, lo descarta
-  /// en silencio. El FID se registra igual cuando el permiso se niega: si el
-  /// camionero lo habilita después, el teléfono ya está del otro lado sin
-  /// reinstalar nada.
-  Future<void> _prepararNotificaciones() async {
+  /// Sin canal, Android no tiene dónde poner el aviso de pedido nuevo; sin
+  /// permiso, lo descarta en silencio. El token se registra igual cuando el
+  /// permiso se niega: si el camionero lo habilita después, el teléfono ya está
+  /// del otro lado sin reinstalar nada.
+  ///
+  /// La ubicación es *best-effort*: sin permiso o sin GPS, el camión aparece
+  /// como "sin señal" en el panel de la telefonista y nada más se rompe.
+  Future<void> _arrancarServiciosDeFondo() async {
     await _notificaciones.preparar();
     await _dispositivo.iniciar();
+    await _ubicacion.iniciar();
   }
 
   /// Con la app abierta, FCM entrega el mensaje sin pintar nada.
@@ -230,9 +247,19 @@ class _AppGasFacilState extends State<AppGasFacil> {
   void _escucharMensajesDeFirebase() {
     try {
       FirebaseMessaging.onMessage.listen((RemoteMessage mensaje) {
+        // Se registra siempre, aunque no se muestre nada: sin esta línea, "el
+        // aviso no llegó" y "llegó pero la app estaba abierta" se ven igual
+        // desde afuera, y son dos problemas distintos.
+        debugPrint('FCM_MENSAJE_EN_PRIMER_PLANO | tipo=${mensaje.data['tipo']}');
         if (mensaje.data['tipo'] == 'pedido_nuevo') {
           _entregas.cargar();
         }
+      });
+
+      // El camionero tocó la notificación con la app abierta en segundo plano.
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage mensaje) {
+        debugPrint('FCM_AVISO_TOCADO | tipo=${mensaje.data['tipo']}');
+        _entregas.cargar();
       });
     } catch (error) {
       // Firebase no está disponible: la app sigue igual, sin avisos.
