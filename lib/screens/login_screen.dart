@@ -249,6 +249,13 @@ class _CampoLogin extends StatelessWidget {
           controller: controlador,
           enabled: habilitado,
           obscureText: esContrasena,
+          // `autocorrect: false` + `enableSuggestions: false` dejan el campo en
+          // modo "sin sugerencias", y el teclado de Samsung responde apagando la
+          // tecla Mayús: la credencial con mayúsculas no se puede escribir.
+          // `visiblePassword` es el tipo que Flutter recomienda para credenciales
+          // (no capitaliza ni sugiere) y conserva el Shift. No afecta a
+          // `obscureText`: lo que se ve en pantalla sigue igual.
+          keyboardType: TextInputType.visiblePassword,
           autocorrect: false,
           enableSuggestions: false,
           textInputAction: TextInputAction.next,
