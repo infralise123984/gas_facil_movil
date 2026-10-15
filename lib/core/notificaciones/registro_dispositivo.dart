@@ -91,7 +91,11 @@ class RegistroDispositivo {
     try {
       await api.registrarDispositivo(token: token, versionApp: versionApp);
       _tokenRegistrado = token;
-      debugPrint('FCM_TOKEN_REGISTRADO');
+      // Solo la huella: alcanza para distinguir dos registros en el log y no
+      // deja la credencial escrita entera. El corte se comprueba porque un
+      // token corrupto no puede tumbar el registro con un RangeError.
+      final String huella = token.length > 8 ? token.substring(0, 8) : token;
+      debugPrint('FCM_TOKEN_REGISTRADO | $huella…');
     } on ErrorApi catch (error) {
       // Un 401 acá es normal si el token llega antes de que haya sesión: el
       // registro se reintenta solo en el próximo refresco de Firebase.
